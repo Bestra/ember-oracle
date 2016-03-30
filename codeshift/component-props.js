@@ -16,7 +16,6 @@ const printComponent = function (file, propertyNames) {
 export default function transformer(file, api) {
   const j = api.jscodeshift;
 
-  console.log(file);
   const {expression, statement, statements} = j.template;
   const componentDefinition = j(file.source)
     .find(j.ExportDefaultDeclaration)
@@ -30,18 +29,21 @@ export default function transformer(file, api) {
   const properties = componentDefinition
   .forEach((path) => {
     let componentArgs = path.value.arguments;
-    let props = componentArgs[componentArgs.length - 1]
-    .properties
-    .filter((p) => {
-      return p.value.type !== "FunctionExpression"
-      && p.key.name !== "actions"
-    });
+    if (componentArgs.length) {
+      let props = componentArgs[componentArgs.length - 1]
+      .properties
+      .filter((p) => {
+        return p.value.type !== "FunctionExpression"
+        && p.key.name !== "actions"
+      });
 
-    props.forEach((node) => {
-      propNames.push({name: node.key.name, line: node.loc.start.line})
-    });
+      props.forEach((node) => {
+        propNames.push({name: node.key.name, line: node.loc.start.line})
+      });
 
-    printComponent(file, propNames);
+      printComponent(file, propNames);
+    }
   }
-
+          );
 };
+
