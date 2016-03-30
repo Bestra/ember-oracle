@@ -1,4 +1,10 @@
-import * as fs from 'fs'
-import walkSync from 'walk-sync'
+import { parse } from 'htmlbars/dist/cjs/htmlbars-syntax'
+const fs = require('fs');
 
-walkSync("baseDir")
+function writeAst(hbsPath, src) {
+  let ast = parse(src);
+  let newPath = hbsPath + '.ast';
+  fs.writeFileSync(newPath, JSON.stringify(ast, null, 4));
+};
+
+export default parse;

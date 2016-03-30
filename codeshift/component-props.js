@@ -4,6 +4,7 @@
 // because I'm lazy.
 //
 
+let fs = require('fs');
 const printComponent = function (file, propertyNames) {
   let componentDef = {
     name: file.path,
@@ -41,6 +42,6 @@ export default function transformer(file, api) {
     });
 
     printComponent(file, propNames);
-  })
+  }
 
 };
