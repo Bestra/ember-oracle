@@ -5,7 +5,10 @@ import walkSync = require('walk-sync');
 
 type Path = string;
 
-function getFiles(rootDir: Path, extension: string): Array<Path> {
+export function getFiles(rootDir: Path, extension: string): Array<Path> {
+    if (!fs.existsSync(rootDir)) {
+        return [];
+    }
     return walkSync(rootDir).filter((file) => {
         return path.extname(file) === extension;
     }).map((file) => {
