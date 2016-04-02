@@ -1,5 +1,5 @@
 import * as net from 'net';
-import findComponents from './findComponents';
+import { findComponentFiles, ComponentDefinition, findProps } from './findComponents';
 import * as path from 'path';
 
 export function start() {
@@ -12,8 +12,10 @@ export function start() {
     let server = net.createServer();
     server.listen(PORT, HOST);
     console.log("Processing component definitions..");
-    let componentPaths = findComponents(dir);
+    let componentPaths = findComponentFiles(dir);
     console.log(`Found ${componentPaths.length} components`);
+    console.log(new ComponentDefinition(componentPaths[0]));
+    console.log(findProps(componentPaths[0]));
     
     server.on('listening', (s) => {
         console.log("server listening on ", server.address());
