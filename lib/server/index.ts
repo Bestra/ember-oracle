@@ -25,5 +25,5 @@ export default function start(appRoot: string) {
         .use(router.allowedMethods());
 
     app.listen(5300);
-
+    console.log("server listening on port 5300")
 }
