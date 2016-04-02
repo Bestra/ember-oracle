@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "htmlbars": "^0.14.16",
-    "jscodeshift": "^0.3.19",
+    "recast": "^0.11.3",
     "walk-sync": "^0.2.6"
   }
 }
