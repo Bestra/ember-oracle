@@ -1,6 +1,17 @@
 import * as net from 'net';
 import findComponents from './findComponents';
-import { run as runCodeShift } from 'jscodeshift/dist/Runner';
+import * as path from 'path';
+
+interface Worker  {
+    send: (data: {options: WorkerOptions, files: string[]}) => void;
+    on: (event: "message" | "disconnect", fn: any) => void;
+}
+
+interface WorkerOptions {
+    dry: boolean;
+    print: boolean;
+    
+}
 
 export function start() {
     let args = process.argv.slice(2);
@@ -15,7 +26,11 @@ export function start() {
     let components = findComponents(dir);
     let componentPaths = components.map(c => c.path);
     console.log(`Found ${components.length} components`);
-    runCodeShift('../codeShift/component-props', componentPaths, {})
+    let transformPath = path.resolve('./codeShift/component-props');
+    let worker: Worker = require('jscodeshift/dist/Worker')([transformPath, 'babel'])
+    worker.on("message", (data) => console.log(data));
+    worker.send({options: {dry: true, print: false},
+                 files: componentPaths.slice(0,1)});
     server.on('listening', (s) => {
         console.log("server listening on ", server.address());
     })
