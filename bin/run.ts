@@ -1,3 +1,3 @@
-import run from '../cli/runFiles'
+import run from '../lib/cli/runFiles'
 
 run()

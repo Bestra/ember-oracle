@@ -1,3 +1,3 @@
-import { start } from '../cli/server'
+import { start } from '../lib/cli/server'
 
 start()
