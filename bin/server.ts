@@ -1,3 +1,11 @@
-import { start } from '../lib/cli/server'
+import startServer from '../lib/server'
 
-start()
+function start() {
+    let args = process.argv.slice(2);
+    let dir = args[0];
+
+    startServer(dir);
+        
+};
+
+start();

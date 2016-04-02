@@ -3,29 +3,40 @@ import * as path from 'path'
 import * as recast from 'recast'
 import * as fs from 'fs'
 import * as ProgressBar from 'progress'
-
 let babel = require('babel-core');
+import * as AST from './ast'
 
 interface Property {
     name: string;
     line: number;
-    isComputed: boolean;
 }
+
+interface ComputedProperty extends Property {
+    dependentKeys: string[];
+}
+
+interface ServiceProperty extends Property {
+    serviceName: string;
+}
+
 
 export function findProps(componentPath: string): Property[] {
     let src = fs.readFileSync(componentPath, 'utf8');
     let ast = recast.parse(src, {esprima: babel});
-    let propList = [];
+    let propList: Property[] = [];
     recast.visit(ast, {
         visitExportDefaultDeclaration: function(path) {
             let node = path.node;
             let args = node.declaration.arguments;
             if (args && args.length) {
-            let directProps = args[args.length - 1].properties;
+            let directProps: AST.Property[] = args[args.length - 1].properties;
             propList = directProps.filter((p) =>  {
                 return p.value.type !== "FunctionExpression" &&
                 p.key.name !== "actions";
-            })}
+            }).map((k) => {
+                return {name: k.key.name, line: k.start}
+            })
+        }
             
             this.traverse(path);
         }
@@ -37,7 +48,7 @@ export function findProps(componentPath: string): Property[] {
 export class ComponentDefinition {
     name: string;
     filePath: string;
-    props: any[];
+    props: Property[];
 
     constructor(filePath: string, props: any[]) {
         this.filePath = filePath;
@@ -67,7 +78,7 @@ export default function createComponentDefinitions(appRoot: string) {
     
     let bar = new ProgressBar(':bar', {total: componentPaths.length})
     return componentPaths.map((p, i) => {
-        let props = findProps(p)
+        let props: Property[] = findProps(p)
         bar.tick();
         return new ComponentDefinition(p, props);
     })
