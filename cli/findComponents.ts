@@ -13,19 +13,23 @@ interface Property {
 export function findProps(componentPath: string): Property[] {
     let src = fs.readFileSync(componentPath, 'utf8');
     let ast = recast.parse(src, {esprima: babel});
-    
+    let propList = [];
     recast.visit(ast, {
         visitExportDefaultDeclaration: function(path) {
             let node = path.node;
             let args = node.declaration.arguments;
+            if (args && args.length) {
             let directProps = args[args.length - 1].properties;
-            let nonFuncs = directProps.filter((p) => p.value.type !== "FunctionExpression");
-            console.log(nonFuncs);
+            propList = directProps.filter((p) =>  {
+                return p.value.type !== "FunctionExpression" &&
+                p.key.name !== "actions";
+            })}
+            
             this.traverse(path);
         }
     })
     
-    return [];
+    return propList;
 }
 
 export class ComponentDefinition {

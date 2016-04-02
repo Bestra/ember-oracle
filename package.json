@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "htmlbars": "^0.14.16",
+    "progress": "^1.1.8",
     "recast": "^0.11.3",
     "walk-sync": "^0.2.6"
   }

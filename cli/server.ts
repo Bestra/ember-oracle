@@ -1,6 +1,9 @@
 import * as net from 'net';
 import { findComponentFiles, ComponentDefinition, findProps } from './findComponents';
 import * as path from 'path';
+import * as ProgressBar from 'progress'
+console.log(ProgressBar);
+
 
 export function start() {
     let args = process.argv.slice(2);
@@ -14,8 +17,13 @@ export function start() {
     console.log("Processing component definitions..");
     let componentPaths = findComponentFiles(dir);
     console.log(`Found ${componentPaths.length} components`);
-    console.log(new ComponentDefinition(componentPaths[0]));
-    console.log(findProps(componentPaths[0]));
+    let bar = new ProgressBar(':bar', {total: componentPaths.length})
+    let defs = componentPaths.map((p, i) => {
+        let props = findProps(p)
+        bar.tick();
+        return props;
+    })
+    
     
     server.on('listening', (s) => {
         console.log("server listening on ", server.address());
