@@ -10,6 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "htmlbars": "^0.14.16",
+    "koa": "^2.0.0",
+    "koa-router": "^7.0.1",
     "progress": "^1.1.8",
     "recast": "^0.11.3",
     "walk-sync": "^0.2.6"

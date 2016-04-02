@@ -1,7 +1,9 @@
-import { getFiles } from './runFiles'
+import { getFiles } from '../util/runFiles'
 import * as path from 'path'
 import * as recast from 'recast'
 import * as fs from 'fs'
+import * as ProgressBar from 'progress'
+
 let babel = require('babel-core');
 
 interface Property {
@@ -37,7 +39,7 @@ export class ComponentDefinition {
     filePath: string;
     props: any[];
 
-    constructor(filePath: string) {
+    constructor(filePath: string, props: any[]) {
         this.filePath = filePath;
         let isPod = filePath.indexOf('pods') > 0;
         if (isPod) {
@@ -46,7 +48,7 @@ export class ComponentDefinition {
             let parts = filePath.split('/')
             this.name = path.basename(parts[parts.length - 1])
         }
-        this.props = [];
+        this.props = props;
         
     }
 }
@@ -57,4 +59,16 @@ export function findComponentFiles(appRoot: string): Array<string> {
   let nonPodComponents = getFiles(path.join(appRoot, 'pods/components'), '.js');
   
   return [].concat(podComponents, nonPodComponents);
+}
+
+export default function createComponentDefinitions(appRoot: string) {
+    console.log("Processing component definitions..");
+    let componentPaths = findComponentFiles(appRoot);
+    
+    let bar = new ProgressBar(':bar', {total: componentPaths.length})
+    return componentPaths.map((p, i) => {
+        let props = findProps(p)
+        bar.tick();
+        return new ComponentDefinition(p, props);
+    })
 }
