@@ -22,17 +22,3 @@ function processFiles(filePaths: Array<Path>, handler: (path: Path, src: string)
         handler(p, content);
     });
 };
-
-export default function() {
-    let args = process.argv.slice(2);
-    let dir = args[0];
-    let extension = args[1];
-    let handler = args[2];
-    if (dir) {
-        let handlerPath = path.resolve(handler);
-        let handlerFn = require(handlerPath).default;
-        processFiles(getFiles(dir, extension), (path, src) => {
-           handlerFn(path, src);
-        });
-    }
-}
