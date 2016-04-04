@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "./bin/server",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/.bin/mocha ./test/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -18,6 +18,6 @@
     "walk-sync": "^0.2.6"
   },
   "devDependencies": {
-    "qunit": "^0.9.1"
+    "mocha": "^2.4.5"
   }
 }

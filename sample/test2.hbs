@@ -1,3 +1,7 @@
-{{#some-component k=5 dude="sweet"}}
-  <div><span>Whoah.</span></div>
+{{#some-component k=context1 dude="sweet" as |param1 param2|}}
+  <div>
+      <span>Whoah. {{param1.stuff}}</span>
+      <p>{{param2}}</p>
+      {{context2}}
+  </div>
 {{/some-component}}
