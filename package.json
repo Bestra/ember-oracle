@@ -4,8 +4,8 @@
   "description": "Utils for analyzing ember code",
   "main": "index.js",
   "scripts": {
-    "start": "./bin/server",
-    "test": "node_modules/.bin/mocha ./test/index.js"
+    "start": "./bin/server/index.js",
+    "test": "node_modules/.bin/mocha --harmony ./test/index.js"
   },
   "author": "",
   "license": "ISC",

@@ -21,7 +21,7 @@ interface ServiceProperty extends Property {
 
 
 export function findProps(componentPath: string): Property[] {
-    let src = fs.readFileSync(componentPath, 'utf8');
+    let src = fs.readFileSync(componentPath, 'utf8');   
     let ast = recast.parse(src, {esprima: babel});
     let propList: Property[] = [];
     recast.visit(ast, {
@@ -76,10 +76,12 @@ export default function createComponentDefinitions(appRoot: string) {
     console.log("Processing component definitions..");
     let componentPaths = findComponentFiles(appRoot);
     
-    let bar = new ProgressBar(':bar', {total: componentPaths.length})
+    let bar = new ProgressBar(':current/:total :filename', {total: componentPaths.length})
     return componentPaths.map((p, i) => {
         let props: Property[] = findProps(p)
-        bar.tick();
+        bar.tick({
+            'filename': p
+        });
         return new ComponentDefinition(p, props);
     })
 }

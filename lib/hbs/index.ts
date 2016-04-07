@@ -17,18 +17,52 @@ export interface Template {
 //2. walk PathExpression nodes.
 //3. if our variable is a pathexpression whose parts contain a block param do something
 //4. otherwise do something else
-function parseVariableDef(ast: htmlBars.Program, name: string, position: htmlBars.Position): any {
+
+function withinProgram(program: htmlBars.Program, position: htmlBars.Position): boolean {
+    return program.loc.start.line < position.line && program.loc.end.line > position.line;
+}
+
+type VariableDef = [("blockParam" | "path"), htmlBars.Position]
+export function parseVariableDef(template: Template, name: string, position: htmlBars.Position): VariableDef {
+    let ast = htmlBars.parse(template.source);
+    let programs: htmlBars.Program[] = [];
     htmlBars.traverse(ast, {
         Program: {
-            enter(node) {
-                
+            enter(node: htmlBars.Program) {
+                programs.push(node);
             }
         }
-    })
-    
+    });
+    let blockProvider = programs
+        .filter(prog => withinProgram(prog, position))
+        .find(prog => prog.blockParams.indexOf(name) > -1);
+
+    if (blockProvider) {
+        return ["blockParam", blockProvider.loc.start];
+    } else {
+        return ["path", position];
+    }
+
+
 }
-export default function findDefinition(template: Template, variableName: string, sourceLine: number): any {
-    
-    
-    return {filePath: template.filePath, line: sourceLine, column: 0};
+
+export function contextForDef(def: VariableDef, templatePath: string): string {
+    if (def[0] === "path") {
+        if (templatePath.match("/pods/components")) {
+            return templatePath.replace("template.hbs", "component.js");
+        } else if (templatePath.match("/pods/")) {
+            return path.dirname(templatePath) + "/controller.js";
+        } else if (templatePath.match("templates/components/")) {
+            return templatePath.split("templates/").join('').replace(".hbs", ".js");
+        } else if (templatePath.match("/templates/")) {
+            return templatePath.replace("/templates/", "/controllers/").replace(".hbs", ".js");
+        }
+    }
+}
+
+export default function findDefinition(template: Template, variableName: string, line: number, column: number): any {
+    return parseVariableDef(template,
+        variableName,
+        { line: line, column: column });
+
 }
