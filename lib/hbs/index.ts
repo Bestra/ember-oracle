@@ -57,6 +57,10 @@ export function contextForDef(def: VariableDef, templatePath: string): string {
         } else if (templatePath.match("/templates/")) {
             return templatePath.replace("/templates/", "/controllers/").replace(".hbs", ".js");
         }
+    } else if (def[0] === "blockParam") {
+        //find the path for the thing that yielded the param.
+        //probably should have this whole thing work on module names first.
+        return "bla"
     }
 }
 
