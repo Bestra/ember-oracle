@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "./bin/server/index.js",
-    "test": "node_modules/.bin/mocha --harmony ./test/index.js"
+    "test": "node_modules/.bin/mocha ./test/index.js",
+    "watch": "tsc -p . -w",
+    "test-watch": "node_modules/.bin/mocha --watch ./test/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -13,6 +15,7 @@
     "htmlbars": "^0.14.16",
     "koa": "^2.0.0",
     "koa-router": "^7.0.1",
+    "lodash": "^4.8.2",
     "progress": "^1.1.8",
     "recast": "^0.11.3",
     "walk-sync": "^0.2.6"
