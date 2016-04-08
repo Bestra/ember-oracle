@@ -13,6 +13,12 @@
             end: Loc;
         }
     }
+    
+    export interface NodePath {
+        node: Node;
+        parent: NodePath;
+        scope;
+    }
 
     export interface Property extends Node {
         key: { name: "string" };
