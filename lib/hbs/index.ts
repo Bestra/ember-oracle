@@ -6,67 +6,74 @@ import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 import * as path from 'path'
 import * as fs from 'fs'
 
+import * as resolver from '../util/resolver'
+
 export interface Template {
     filePath;
     source;
 }
 
-//block params' context is really the block helper's template
-//if it's not a block param the component's context is the template it's rendered in.
-//1. walk Program nodes and get their block params
-//2. walk PathExpression nodes.
-//3. if our variable is a pathexpression whose parts contain a block param do something
-//4. otherwise do something else
-
-function withinProgram(program: htmlBars.Program, position: htmlBars.Position): boolean {
-    return program.loc.start.line < position.line && program.loc.end.line > position.line;
+function withinBlock(block: htmlBars.BlockStatement, position: htmlBars.Position): boolean {
+    return block.loc.start.line < position.line && block.loc.end.line > position.line;
 }
 
-type VariableDef = [("blockParam" | "path"), htmlBars.Position]
-export function parseVariableDef(template: Template, name: string, position: htmlBars.Position): VariableDef {
+export interface PathSource {
+    name;
+    sourceModule;
+};
+export interface BlockParam extends PathSource{
+    block: htmlBars.BlockStatement;
+    index;
+};
+
+function isComponent(path: string): boolean {
+    return !!path.match(/-/);
+};
+
+function findBlockModule(block?: htmlBars.BlockStatement): string {
+    if (!block) { return null; }
+
+    let pathString = block.path.original;
+    if (isComponent(pathString)) {
+        return "template:components/" + pathString;
+    } else {
+        return null;
+    }
+};
+
+export function extractBlockParam(template: Template, name: string, position: htmlBars.Position): BlockParam {
     let ast = htmlBars.parse(template.source);
-    let programs: htmlBars.Program[] = [];
+    let blocks: htmlBars.BlockStatement[] = [];
     htmlBars.traverse(ast, {
-        Program: {
-            enter(node: htmlBars.Program) {
-                programs.push(node);
+        BlockStatement: {
+            enter(node: htmlBars.BlockStatement) {
+                blocks.push(node);
             }
         }
     });
-    let blockProvider = programs
-        .filter(prog => withinProgram(prog, position))
-        .find(prog => prog.blockParams.indexOf(name) > -1);
-
-    if (blockProvider) {
-        return ["blockParam", blockProvider.loc.start];
-    } else {
-        return ["path", position];
-    }
-
-
+    return blocks
+        .filter(block => withinBlock(block, position))
+        .map(block => {
+            return {
+                name: name,
+                block: block,
+                index: block.program.blockParams.indexOf(name),
+                sourceModule: findBlockModule(block)
+            };
+        }).find(param => param.index > -1);
 }
 
-export function contextForDef(def: VariableDef, templatePath: string): string {
-    if (def[0] === "path") {
-        if (templatePath.match("/pods/components")) {
-            return templatePath.replace("template.hbs", "component.js");
-        } else if (templatePath.match("/pods/")) {
-            return path.dirname(templatePath) + "/controller.js";
-        } else if (templatePath.match("templates/components/")) {
-            return templatePath.split("templates/").join('').replace(".hbs", ".js");
-        } else if (templatePath.match("/templates/")) {
-            return templatePath.replace("/templates/", "/controllers/").replace(".hbs", ".js");
-        }
-    } else if (def[0] === "blockParam") {
-        //find the path for the thing that yielded the param.
-        //probably should have this whole thing work on module names first.
-        return "bla"
-    }
-}
-
-export default function findDefinition(template: Template, variableName: string, line: number, column: number): any {
-    return parseVariableDef(template,
+export default function findDefinition(template: Template, variableName: string, line: number, column: number): PathSource {
+    let blockParam = extractBlockParam(template,
         variableName,
-        { line: line, column: column });
+        { line: line, column: column }
+    );
 
+    if (blockParam) {
+        return blockParam;
+    } else {
+        let templateModule = resolver.moduleNameFromPath(template.filePath);
+        let templateContextModule = resolver.templateContext(templateModule);
+        return {name: name, sourceModule: templateContextModule };
+    }
 }

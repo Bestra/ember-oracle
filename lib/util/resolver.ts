@@ -6,7 +6,7 @@ import * as path from 'path'
 const podRoot = "app/pods";
 const appRoot = "app";
 
-export function nameFromPath(filePath: string): string {
+export function moduleNameFromPath(filePath: string): string {
     return "foo"
 };
 
@@ -30,6 +30,13 @@ export function createPath(isPod, moduleName) {
     }
     
     return filePath.join('/');
+}
+
+export function templateContext(templateModule: string): string {
+    let parts = templateModule.split(':');
+    let path  = parts[1];
+    let newRoot = path.match("components") ? "component:" : "controller:";
+    return newRoot + path; 
 }
 
 export function pathsFromName(moduleName: string): string[] {

@@ -3,8 +3,8 @@ import * as assert from 'assert'
 import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 
 import * as hbs from '../lib/hbs'
-describe("parseVariableDef", function() {
-    it("works for plain paths", function() {
+describe("extractBlockParam", function() {
+    it("returns undefined for plain paths", function() {
         let src =
             `
         <div>{{foo}}</div>
@@ -14,10 +14,8 @@ describe("parseVariableDef", function() {
             source: src
         };
         let pos: htmlBars.Position = { column: 9, line: 2 };
-        let stuff = hbs.parseVariableDef(template, 'foo', pos);
-        assert.equal(stuff[0], "path");
-        assert.equal(stuff[1].line, 2);
-        assert.equal(stuff[1].column, 9);
+        let param = hbs.extractBlockParam(template, 'foo', pos);
+        assert.equal(param, undefined);
     });
     it("works for block params", function() {
         let src =
@@ -32,40 +30,26 @@ Dude
             source: src
         };
         let pos: htmlBars.Position = { column: 17, line: 4 };
-        let stuff = hbs.parseVariableDef(template, 'foo', pos);
-        assert.equal(stuff[0], "blockParam");
-        assert.equal(stuff[1].line, 2);
-        assert.equal(stuff[1].column, 0);
+        let param = hbs.extractBlockParam(template, 'foo', pos);
+        assert.equal(param.name, 'foo');
+        assert.equal(param.sourceModule, "template:components/fiveyss/stuff-bar");
+        assert.equal(param.index, 0);
     });
-});
-
-describe("contextForDef", function() {
-    describe("plain bound path", function() {
-        let testPaths = (input, expected, msg) => {
-            let context = hbs.contextForDef(["path", { column: 1, line: 1 }], input);
-            assert.equal(context, expected, msg);
-        }
-        
-        it("works", function() {
-            
-            testPaths(
-                "app/pods/components/foo-bar/template.hbs",
-                "app/pods/components/foo-bar/component.js",
-                "component pod def");
-            testPaths(
-                "app/templates/components/foo-bar.hbs",
-                "app/components/foo-bar.js",
-                "non-pod component def");
-            testPaths(
-                "app/templates/foo-bar.hbs",
-                "app/controllers/foo-bar.js",
-                "default context is the controller");
-            testPaths(
-                "app/pods/stuff/foo-bar.hbs",
-                "app/pods/stuff/controller.js",
-            "default context is the controller, for pods too");
-        })
-
-
+    it("works for block params that aren't yielded from a component", function() {
+        let src =
+            `
+{{#each things as |thing|}}
+My name is {{thing}}
+{{/each}}
+        `;
+        let template: hbs.Template = {
+            filePath: 'app/pods/components/foo-bar/template.hbs',
+            source: src
+        };
+        let pos: htmlBars.Position = { column: 15, line: 3 };
+        let param = hbs.extractBlockParam(template, 'thing', pos);
+        assert.equal(param.name, 'thing');
+        assert.equal(param.sourceModule, null);
+        assert.equal(param.index, 0);
     });
 });
