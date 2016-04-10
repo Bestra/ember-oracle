@@ -31,8 +31,7 @@ export default function start(appRoot: string) {
             findDefinition(
                 { filePath: fullPath, source: src },
                 ctx.query.name,
-                ctx.query.line,
-                ctx.query.column
+                {line: ctx.query.line, column: ctx.query.column}
             )
         );
     });

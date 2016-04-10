@@ -52,14 +52,14 @@ describe("the resolver", function() {
             assertModule("app/pods/foo/bar/controller.js", "controller:foo/bar");
             assertModule("app/pods/foo/bar/route.js", "route:foo/bar");
             assertModule("app/pods/foo/bar/template.hbs", "template:foo/bar");
-            assertModule("app/pods/components/foo/bar-baz/template.hbs", "template:componets/foo/bar-baz");
+            assertModule("app/pods/components/foo/bar-baz/template.hbs", "template:components/foo/bar-baz");
             assertModule("app/pods/components/foo/bar-baz/component.js", "component:foo/bar-baz");
         });
         it('turns non-pod paths starting with app/ into module names', function() {
             assertModule("app/controllers/foo/bar.js", "controller:foo/bar");
             assertModule("app/routes/foo/bar.js", "route:foo/bar");
             assertModule("app/templates/foo/bar.hbs", "template:foo/bar");
-            assertModule("app/templates/components/foo/bar-baz.hbs", "template:componets/foo/bar-baz");
+            assertModule("app/templates/components/foo/bar-baz.hbs", "template:components/foo/bar-baz");
             assertModule("app/components/foo/bar-baz.js", "component:foo/bar-baz");
         });
     });

@@ -3,6 +3,8 @@ import * as assert from 'assert'
 import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 
 import * as hbs from '../lib/hbs'
+import findPathDefinition from '../lib/hbs'
+
 describe("extractBlockParam", function() {
     it("returns undefined for plain paths", function() {
         let src =
@@ -53,3 +55,19 @@ My name is {{thing}}
         assert.equal(param.index, 0);
     });
 });
+
+describe('findPathDefinition', function() {
+    describe("paths that haven't been yielded", function() {
+        it("returns the rendering context for plain paths", function() {
+            let template: hbs.Template = {
+                filePath: 'app/pods/components/foo-bar/template.hbs',
+                source: `<div>{{foo}}</div>`
+            };
+            let pos: htmlBars.Position = { column: 8, line: 1 };
+            let param = findPathDefinition(template, 'foo', pos)
+            assert.equal(param.sourceModule, "component:foo-bar");
+        });
+
+    })
+
+})

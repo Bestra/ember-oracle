@@ -21,7 +21,7 @@ export interface PathSource {
     name;
     sourceModule;
 };
-export interface BlockParam extends PathSource{
+export interface BlockParam extends PathSource {
     block: htmlBars.BlockStatement;
     index;
 };
@@ -31,17 +31,17 @@ function isComponent(path: string): boolean {
 };
 
 function findBlockModule(block?: htmlBars.BlockStatement): string {
-    if (!block) { return null; }
-
-    let pathString = block.path.original;
-    if (isComponent(pathString)) {
-        return "template:components/" + pathString;
+    if (block) {
+        let pathString = block.path.original;
+        if (isComponent(pathString)) {
+            return "template:components/" + pathString;
+        } else { return null; }
     } else {
         return null;
     }
 };
 
-export function extractBlockParam(template: Template, name: string, position: htmlBars.Position): BlockParam {
+export function extractBlockParam(template: Template, pathName: string, position: htmlBars.Position): BlockParam {
     let ast = htmlBars.parse(template.source);
     let blocks: htmlBars.BlockStatement[] = [];
     htmlBars.traverse(ast, {
@@ -54,26 +54,24 @@ export function extractBlockParam(template: Template, name: string, position: ht
     return blocks
         .filter(block => withinBlock(block, position))
         .map(block => {
+            console.log(pathName);
             return {
-                name: name,
-                block: block,
-                index: block.program.blockParams.indexOf(name),
+                name: pathName,
+                block,
+                index: block.program.blockParams.indexOf(pathName),
                 sourceModule: findBlockModule(block)
             };
         }).find(param => param.index > -1);
 }
 
-export default function findDefinition(template: Template, variableName: string, line: number, column: number): PathSource {
-    let blockParam = extractBlockParam(template,
-        variableName,
-        { line: line, column: column }
-    );
+export default function findPathDefinition(template: Template, variableName: string, pos: htmlBars.Position): PathSource {
+    let blockParam = extractBlockParam(template, variableName, pos);
 
     if (blockParam) {
         return blockParam;
     } else {
         let templateModule = resolver.moduleNameFromPath(template.filePath);
         let templateContextModule = resolver.templateContext(templateModule);
-        return {name: name, sourceModule: templateContextModule };
+        return { name: variableName, sourceModule: templateContextModule };
     }
 }
