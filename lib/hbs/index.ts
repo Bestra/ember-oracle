@@ -5,44 +5,31 @@
 import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 import * as path from 'path'
 import * as fs from 'fs'
+import {Template, BlockParam, PathSource} from './types'
 
 import * as resolver from '../util/resolver'
-
-export interface Template {
-    filePath;
-    source;
-}
 
 function withinBlock(block: htmlBars.BlockStatement, position: htmlBars.Position): boolean {
     return block.loc.start.line < position.line && block.loc.end.line > position.line;
 }
 
-export interface PathSource {
-    name;
-    sourceModule;
-};
-export interface BlockParam extends PathSource {
-    block: htmlBars.BlockStatement;
-    index;
-};
-
 function isComponent(path: string): boolean {
     return !!path.match(/-/);
 };
 
-function findBlockModule(block?: htmlBars.BlockStatement): string {
-    if (block) {
-        let pathString = block.path.original;
-        if (isComponent(pathString)) {
-            return "template:components/" + pathString;
-        } else { return null; }
-    } else {
+function findBlockModule(block: htmlBars.BlockStatement): string {
+    let pathString = block.path.original;
+    if (isComponent(pathString)) {
+        return "template:components/" + pathString;
+    } else { 
         return null;
-    }
+     }
 };
 
 export function extractBlockParam(template: Template, pathName: string, position: htmlBars.Position): BlockParam {
     let ast = htmlBars.parse(template.source);
+    let templateModule = resolver.moduleNameFromPath(template.filePath);
+
     let blocks: htmlBars.BlockStatement[] = [];
     htmlBars.traverse(ast, {
         BlockStatement: {
@@ -53,15 +40,41 @@ export function extractBlockParam(template: Template, pathName: string, position
     });
     return blocks
         .filter(block => withinBlock(block, position))
-        .map(block => {
-            console.log(pathName);
+        .map(blockNode => {
+            let sourceModule = findBlockModule(blockNode);
             return {
+                type: "BlockParm",
                 name: pathName,
-                block,
-                index: block.program.blockParams.indexOf(pathName),
-                sourceModule: findBlockModule(block)
-            };
+                blockNode,
+                index: blockNode.program.blockParams.indexOf(pathName),
+                sourceModule: sourceModule || templateModule,
+                isYielded: !!sourceModule
+            }
         }).find(param => param.index > -1);
+}
+
+interface SourceLocation {
+    filePath: string;
+    loc: {line: number, column: number};
+}
+
+function isBlockParam(src: PathSource): src is BlockParam {
+    return src.type === "BlockParam"
+}
+
+function findLocationInFile(varToFind: PathSource) {
+   if (isBlockParam(varToFind)) {
+      if (varToFind.isYielded) {
+          // find the yield expression in the source template
+      } else {
+          // find the block expression in the source template
+          return {filePath: resolver.pathsFromName(varToFind.sourceModule), loc: varToFind.blockNode.loc.start}
+      }
+   } else {
+       // call the findAttr function or something with the path's context.
+   }
+   
+    
 }
 
 export default function findPathDefinition(template: Template, variableName: string, pos: htmlBars.Position): PathSource {
@@ -72,6 +85,7 @@ export default function findPathDefinition(template: Template, variableName: str
     } else {
         let templateModule = resolver.moduleNameFromPath(template.filePath);
         let templateContextModule = resolver.templateContext(templateModule);
-        return { name: variableName, sourceModule: templateContextModule };
+        return { type: "BoundPath", name: variableName, sourceModule: templateContextModule };
     }
 }
+
