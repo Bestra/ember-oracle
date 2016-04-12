@@ -1,4 +1,4 @@
-import { getFiles } from '../util/runFiles'
+import { getFiles } from '../util/files'
 import * as path from 'path'
 import * as recast from 'recast'
 import * as fs from 'fs'
@@ -20,8 +20,8 @@ interface ServiceProperty extends Property {
 }
 
 
-export function findProps(componentPath: string): Property[] {
-    let src = fs.readFileSync(componentPath, 'utf8');   
+export function findProps(jsPath: string): Property[] {
+    let src = fs.readFileSync(jsPath, 'utf8');   
     let ast = recast.parse(src, {esprima: babel});
     let propList: Property[] = [];
     recast.visit(ast, {

@@ -1,10 +1,12 @@
 import * as fs from 'fs'
 import * as path from 'path'
-
+import * as files from '../util/files'
+import * as assert from 'assert'
 // yes it's an incredibly naive version of the ember resolver.
 
-const podRoot = "app/pods";
-const appRoot = "app";
+export let podPrefix = "pods";
+export let appRootName = "app";
+export let appRootPath = ""; // this will need to allow for engines later
 
 type ModulePrefix = 'component' | 'template' | 'route' | 'controller';
 
@@ -12,6 +14,7 @@ function singularize(str: string) {
     return str.slice(0, str.length - 1);
 };
 
+// Note that all paths should be relative starting with appRootName
 export function moduleNameFromPath(filePath: string): string {
     let isPod = filePath.match(/pods/)
     if (isPod) {
@@ -34,6 +37,7 @@ export function moduleNameFromPath(filePath: string): string {
     }
 };
 
+// creates a relative path
 export function createPath(isPod, moduleName) {
     let parts = moduleName.split(':');
     let prefix = parts[0];
@@ -42,14 +46,14 @@ export function createPath(isPod, moduleName) {
     let filePath = [];
     if (isPod) {
         if (prefix === 'component') {
-            filePath = [podRoot, "components", ...segments, (prefix + extension)]
+            filePath = [appRootName, podPrefix, "components", ...segments, (prefix + extension)]
         } else {
-            filePath = [podRoot, ...segments, (prefix + extension)]
+            filePath = [appRootName, podPrefix, ...segments, (prefix + extension)]
         }
     } else {
         let fileName = segments.pop() + extension;
         // segments could be an empty array, hence concat
-        filePath = [appRoot].concat(prefix + 's', ...segments, fileName)
+        filePath = [appRootName].concat(prefix + 's', ...segments, fileName)
     }
 
     return filePath.join('/');
@@ -62,7 +66,17 @@ export function templateContext(templateModule: string): string {
     return newRoot + path.replace("components/","");
 };
 
+export function setAppRootPath(aPath: string) {
+    appRootPath = aPath;
+}
+export function createAbsolutePath(relativePath: string) {
+    assert.notEqual(appRootPath, '', "resolver.appRootPath must be set");
+    return path.join(appRootPath, relativePath);
+}
 export function pathsFromName(moduleName: string): string[] {
     return [true, false].map((t) => createPath(t, moduleName));
-
 };
+
+export function filePathForModule(moduleName: string): string {
+    return pathsFromName(moduleName).map(createAbsolutePath).filter(files.exists)[0];
+}

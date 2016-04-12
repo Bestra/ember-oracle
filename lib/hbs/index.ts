@@ -21,9 +21,9 @@ function findBlockModule(block: htmlBars.BlockStatement): string {
     let pathString = block.path.original;
     if (isComponent(pathString)) {
         return "template:components/" + pathString;
-    } else { 
+    } else {
         return null;
-     }
+    }
 };
 
 export function extractBlockParam(template: Template, pathName: string, position: htmlBars.Position): BlockParam {
@@ -43,7 +43,7 @@ export function extractBlockParam(template: Template, pathName: string, position
         .map(blockNode => {
             let sourceModule = findBlockModule(blockNode);
             return {
-                type: "BlockParm",
+                type: "BlockParam",
                 name: pathName,
                 blockNode,
                 index: blockNode.program.blockParams.indexOf(pathName),
@@ -55,31 +55,59 @@ export function extractBlockParam(template: Template, pathName: string, position
 
 interface SourceLocation {
     filePath: string;
-    loc: {line: number, column: number};
+    loc: { line: number, column: number };
 }
 
 function isBlockParam(src: PathSource): src is BlockParam {
     return src.type === "BlockParam"
 }
 
+
+function findYieldLocation(blockParam: BlockParam) {
+    let yieldTemplate = resolver.filePathForModule(blockParam.sourceModule);
+    let yieldSrc = fs.readFileSync(yieldTemplate, 'utf8');
+    let ast = htmlBars.parse(yieldSrc);
+    let yieldedVarLoc;
+    htmlBars.traverse(ast, {
+        MustacheStatement: {
+            enter(node: htmlBars.MustacheStatement) {
+                if (node.params[blockParam.index]) {
+                  yieldedVarLoc = node.params[blockParam.index].loc.start; 
+                }
+            }
+        }
+    })
+       
+    return { filePath: yieldTemplate, loc: yieldedVarLoc }
+}
+
 function findLocationInFile(varToFind: PathSource) {
-   if (isBlockParam(varToFind)) {
-      if (varToFind.isYielded) {
-          // find the yield expression in the source template
-      } else {
-          // find the block expression in the source template
-          return {filePath: resolver.pathsFromName(varToFind.sourceModule), loc: varToFind.blockNode.loc.start}
-      }
-   } else {
-       // call the findAttr function or something with the path's context.
-   }
-   
-    
+    console.log(varToFind);
+    if (isBlockParam(varToFind)) {
+        if (varToFind.isYielded) {
+            console.log("yielded");
+            return findYieldLocation(varToFind);
+            // find the yield expression in the source template
+        } else {
+            // find the block expression in the source template
+            console.log("loc is", varToFind.blockNode.loc);
+            return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: varToFind.blockNode.loc.start }
+        }
+    } else {
+        console.log("find controller ", varToFind.sourceModule);
+        // call the findAttr function or something with the path's context.
+         return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: {line: 0, column: 0} }
+    }
+
+
+}
+
+export function findDefinition(template: Template, variableName: string, pos: htmlBars.Position) {
+    return findLocationInFile(findPathDefinition(template, variableName, pos))
 }
 
 export default function findPathDefinition(template: Template, variableName: string, pos: htmlBars.Position): PathSource {
     let blockParam = extractBlockParam(template, variableName, pos);
-
     if (blockParam) {
         return blockParam;
     } else {

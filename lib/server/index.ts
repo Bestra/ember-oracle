@@ -2,15 +2,22 @@ import * as Koa from 'koa'
 import * as Router from "koa-router";
 import * as path from 'path';
 import * as fs from 'fs';
-import defineComponents from '../components/';
-import findDefinition from '../hbs';
 
-export default function start(appRoot: string) {
+import * as resolver from '../util/resolver'
+import defineComponents from '../components/';
+import { findDefinition } from '../hbs';
+import { cachePaths } from '../util/files'
+import { ok } from 'assert'
+export default function start(appPath: string) {
+    ok(path.isAbsolute(appPath), "app root must be an absolute path");
+    resolver.setAppRootPath(appPath);
+    let appDir = path.join(appPath, resolver.appRootName);
     let app = new Koa();
     let router = new Router();
 
-    let components = defineComponents(appRoot);
-
+    let components = [] //defineComponents(appRoot);
+    cachePaths(appDir, '.hbs'); // Todo: move this into the resolver setup?
+    cachePaths(appDir, '.js');
     router.get('/', function(ctx, next) {
         ctx.body = "Hey";
     });
@@ -26,7 +33,7 @@ export default function start(appRoot: string) {
     router.get('/templates/definition', function(ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
-        let src = fs.readFileSync(fullPath);
+        let src = fs.readFileSync(fullPath, 'utf8');
         ctx.body = JSON.stringify(
             findDefinition(
                 { filePath: fullPath, source: src },

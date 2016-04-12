@@ -1,7 +1,6 @@
 
 import * as assert from 'assert'
 import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
-
 import * as hbs from '../lib/hbs'
 import findPathDefinition from '../lib/hbs'
 
@@ -11,7 +10,7 @@ describe("extractBlockParam", function() {
             `
         <div>{{foo}}</div>
         `;
-        let template: hbs.Template = {
+        let template = {
             filePath: 'app/pods/components/foo-bar/template.hbs',
             source: src
         };
@@ -27,7 +26,7 @@ My name is {{foo}}
 Dude
 {{/fiveyss/stuff-bar}}
         `;
-        let template: hbs.Template = {
+        let template = {
             filePath: 'app/pods/components/foo-bar/template.hbs',
             source: src
         };
@@ -44,7 +43,7 @@ Dude
 My name is {{thing}}
 {{/each}}
         `;
-        let template: hbs.Template = {
+        let template = {
             filePath: 'app/pods/components/foo-bar/template.hbs',
             source: src
         };
@@ -59,7 +58,7 @@ My name is {{thing}}
 describe('findPathDefinition', function() {
     describe("paths that haven't been yielded", function() {
         it("returns the rendering context for plain paths", function() {
-            let template: hbs.Template = {
+            let template = {
                 filePath: 'app/pods/components/foo-bar/template.hbs',
                 source: `<div>{{foo}}</div>`
             };
@@ -89,12 +88,12 @@ describe('findPathDefinition', function() {
 My name is {{bar}}
 Dude
 {{/fiveyss/stuff-bar}}`;
-        let template: hbs.Template = {
+        let template = {
             filePath: 'app/pods/components/foo-bar/template.hbs',
             source: src
         };
         it('returns the template that yielded the block param', function() {
-            let def = findPathDefinition(template, 'bar', { line: 2, column: 16 }) as hbs.BlockParam;
+            let def = findPathDefinition(template, 'bar', { line: 2, column: 16 }) as any;
             assert.equal(
                 def.sourceModule,
                 "template:components/fiveyss/stuff-bar",
@@ -110,12 +109,12 @@ Dude
 `{{#each things as |thing|}}
 My name is {{thing}}
 {{/each}}`;
-        let template: hbs.Template = {
+        let template = {
             filePath: 'app/pods/components/foo-bar/template.hbs',
             source: src
         };
         it('returns null with the block for the helper', function() {
-            let def = findPathDefinition(template, 'thing', { line: 2, column: 16 }) as hbs.BlockParam;
+            let def = findPathDefinition(template, 'thing', { line: 2, column: 16 }) as any;
             assert.equal(
                 def.sourceModule,
                 null,

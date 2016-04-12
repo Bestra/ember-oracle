@@ -2,10 +2,10 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export function parse(foo): Program;
     export function traverse(node: any, visitor: any);
 
-    function enter<T>(node: T):void;
-    function exit<T>(node: T):void;
+    function enter<T>(node: T): void;
+    function exit<T>(node: T): void;
 
-    
+
     export interface MustacheStatement {
         path: PathExpression;
         params: Param[];
@@ -65,6 +65,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
         params: Param[];
         hash: Hash;
         indent: number;
+        loc: Loc;
+
     }
 
     // export function buildPartial(name, params, hash, indent) {
@@ -79,6 +81,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     export interface CommentStatement {
         value: any;
+                loc: Loc;
+
     }
 
     // export function buildComment(value) {
@@ -90,6 +94,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     export interface ConcatStatement {
         parts: any[];
+                loc: Loc;
+
     }
 
     // export function buildConcat(parts) {
@@ -146,6 +152,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface AttrNode {
         name: string;
         value: any;
+                loc: Loc;
+
     }
 
     // export function buildAttr(name, value) {
@@ -175,6 +183,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
         path: PathExpression;
         params: Param[];
         hash: Hash;
+                loc: Loc;
+
     }
 
     // export function buildSexpr(path, params, hash) {
@@ -189,6 +199,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface PathExpression {
         original: string;
         parts: string[];
+                loc: Loc;
+
     }
 
     // export function buildPath(original) {
@@ -206,6 +218,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface StringLiteral {
         value: any;
         original: any;
+                loc: Loc;
+
     }
 
     // export function buildString(value) {
@@ -219,6 +233,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface BooleanLiteral {
         value: any;
         original: any;
+                loc: Loc;
+
     }
 
     // export function buildBoolean(value) {
@@ -232,6 +248,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface NumberLiteral {
         value: any;
         original: any;
+                loc: Loc;
+
     }
 
     // export function buildNumber(value) {
@@ -245,6 +263,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface NullLiteral {
         value: any;
         original: any;
+                loc: Loc;
     }
 
     // export function buildNull() {
@@ -258,6 +277,9 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface UndefinedLiteral {
         value: any;
         original: any;
+                loc: Loc;
+
+        
     }
     // export function buildUndefined() {
     //   return {
@@ -271,6 +293,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     export interface Hash {
         pairs: HashPair[]
+                loc: Loc;
+
     }
 
     // export function buildHash(pairs) {
@@ -284,6 +308,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface HashPair {
         key: string;
         value: any;
+                loc: Loc;
+
     }
     // export function buildPair(key, value) {
     //   return {
@@ -329,43 +355,43 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
         start: Position;
         end: Position;
     }
-    
-    
-    export type Literal = 
-     StringLiteral
-     | BooleanLiteral
-     | NumberLiteral
-     | NullLiteral
-     | UndefinedLiteral;
-     
-     
-    export type Expression = SubExpression | PathExpression 
+
+
+    export type Literal =
+        StringLiteral
+        | BooleanLiteral
+        | NumberLiteral
+        | NullLiteral
+        | UndefinedLiteral;
+
+
+    export type Expression = SubExpression | PathExpression
     export type Param = Expression | Literal;
     export type Node =
-     ElementNode
-     | ComponentNode
-     | AttrNode
-     | TextNode;
-     
-    export type Statement = 
-     MustacheStatement
-     | BlockStatement
-     | ElementModifierStatement
-     | PartialStatement
-     | CommentStatement
-     | ConcatStatement;
-    
-    export type ASTNode = 
-     Statement
-     | Node
-     | Expression
-     | Literal
-     | Hash
-     | HashPair
-     | Program
-     | Position
-     | Loc;
-     
+        ElementNode
+        | ComponentNode
+        | AttrNode
+        | TextNode;
+
+    export type Statement =
+        MustacheStatement
+        | BlockStatement
+        | ElementModifierStatement
+        | PartialStatement
+        | CommentStatement
+        | ConcatStatement;
+
+    export type ASTNode =
+        Statement
+        | Node
+        | Expression
+        | Literal
+        | Hash
+        | HashPair
+        | Program
+        | Position
+        | Loc;
+
     // function buildLoc(startLine, startColumn, endLine, endColumn, source) {
     //   if (arguments.length === 1) {
     //     var loc = startLine;
