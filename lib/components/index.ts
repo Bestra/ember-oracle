@@ -9,6 +9,7 @@ import * as AST from './ast'
 interface Property {
     name: string;
     line: number;
+    column: number;
 }
 
 interface ComputedProperty extends Property {
@@ -18,7 +19,6 @@ interface ComputedProperty extends Property {
 interface ServiceProperty extends Property {
     serviceName: string;
 }
-
 
 export function findProps(jsPath: string): Property[] {
     let src = fs.readFileSync(jsPath, 'utf8');   
@@ -34,7 +34,7 @@ export function findProps(jsPath: string): Property[] {
                 return p.value.type !== "FunctionExpression" &&
                 p.key.name !== "actions";
             }).map((k) => {
-                return {name: k.key.name, line: k.start}
+                return {name: k.key.name, line: k.loc.start.line, column: k.loc.start.column}
             })
         }
             
@@ -45,7 +45,7 @@ export function findProps(jsPath: string): Property[] {
     return propList;
 }
 
-export class ComponentDefinition {
+export class EmberClassDefinition {
     name: string;
     filePath: string;
     props: Property[];
@@ -64,10 +64,9 @@ export class ComponentDefinition {
     }
 }
 
-
 export function findComponentFiles(appRoot: string): Array<string> {
-  let podComponents = getFiles(path.join(appRoot, 'components'), '.js');
-  let nonPodComponents = getFiles(path.join(appRoot, 'pods/components'), '.js');
+  let podComponents = getFiles(path.join(appRoot, 'components'), ['.js']);
+  let nonPodComponents = getFiles(path.join(appRoot, 'pods/components'), ['.js']);
   
   return [].concat(podComponents, nonPodComponents);
 }
@@ -82,6 +81,6 @@ export default function createComponentDefinitions(appRoot: string) {
         bar.tick({
             'filename': p
         });
-        return new ComponentDefinition(p, props);
+        return new EmberClassDefinition(p, props);
     })
 }

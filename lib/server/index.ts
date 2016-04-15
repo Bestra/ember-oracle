@@ -4,24 +4,27 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import * as resolver from '../util/resolver'
+import * as registry from '../util/registry'
+
 import defineComponents from '../components/';
 import { findDefinition } from '../hbs';
-import { cachePaths } from '../util/files'
+
 import { ok } from 'assert'
 export default function start(appPath: string) {
     ok(path.isAbsolute(appPath), "app root must be an absolute path");
-    resolver.setAppRootPath(appPath);
+    resolver.setRootPath(appPath);
     let appDir = path.join(appPath, resolver.appRootName);
     let app = new Koa();
     let router = new Router();
 
     let components = [] //defineComponents(appRoot);
-    cachePaths(appDir, '.hbs'); // Todo: move this into the resolver setup?
-    cachePaths(appDir, '.js');
+    
+    registry.registerAppModules();
+    
     router.get('/', function(ctx, next) {
         ctx.body = "Hey";
     });
-
+    
     router.get('/components', function(ctx, next) {
         ctx.body = components.map((c) => c.name).toString();
     });

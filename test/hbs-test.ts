@@ -50,7 +50,7 @@ My name is {{thing}}
         let pos: htmlBars.Position = { column: 15, line: 3 };
         let param = hbs.extractBlockParam(template, 'thing', pos);
         assert.equal(param.name, 'thing');
-        assert.equal(param.sourceModule, null);
+        assert.equal(param.sourceModule, 'template:components/foo-bar');
         assert.equal(param.index, 0);
     });
 });
@@ -117,8 +117,8 @@ My name is {{thing}}
             let def = findPathDefinition(template, 'thing', { line: 2, column: 16 }) as any;
             assert.equal(
                 def.sourceModule,
-                null,
-                "the sourceModule is null"
+                'template:components/foo-bar',
+                "the sourceModule should be the current template"
             );
             assert.ok(def.blockNode, 'it returns the block itelf in the definition');
             assert.equal(def.index, 0, 'returns the index of the block param'); 

@@ -7,6 +7,8 @@ import * as path from 'path'
 import * as fs from 'fs'
 import {Template, BlockParam, PathSource} from './types'
 
+import * as ember from '../ember'
+
 import * as resolver from '../util/resolver'
 
 function withinBlock(block: htmlBars.BlockStatement, position: htmlBars.Position): boolean {
@@ -62,7 +64,6 @@ function isBlockParam(src: PathSource): src is BlockParam {
     return src.type === "BlockParam"
 }
 
-
 function findYieldLocation(blockParam: BlockParam) {
     let yieldTemplate = resolver.filePathForModule(blockParam.sourceModule);
     let yieldSrc = fs.readFileSync(yieldTemplate, 'utf8');
@@ -72,12 +73,12 @@ function findYieldLocation(blockParam: BlockParam) {
         MustacheStatement: {
             enter(node: htmlBars.MustacheStatement) {
                 if (node.params[blockParam.index]) {
-                  yieldedVarLoc = node.params[blockParam.index].loc.start; 
+                    yieldedVarLoc = node.params[blockParam.index].loc.start;
                 }
             }
         }
     })
-       
+
     return { filePath: yieldTemplate, loc: yieldedVarLoc }
 }
 
@@ -87,23 +88,26 @@ function findLocationInFile(varToFind: PathSource) {
         if (varToFind.isYielded) {
             console.log("yielded");
             return findYieldLocation(varToFind);
-            // find the yield expression in the source template
         } else {
             // find the block expression in the source template
             console.log("loc is", varToFind.blockNode.loc);
             return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: varToFind.blockNode.loc.start }
         }
     } else {
-        console.log("find controller ", varToFind.sourceModule);
+        console.log("find controller", varToFind.sourceModule);
         // call the findAttr function or something with the path's context.
-         return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: {line: 0, column: 0} }
+        
+        let propertyLocation = ember.propertyLocation(varToFind.sourceModule, varToFind.name);
+        console.log("location is >>>>", propertyLocation)
+        return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: propertyLocation }
     }
 
 
 }
 
 export function findDefinition(template: Template, variableName: string, pos: htmlBars.Position) {
-    return findLocationInFile(findPathDefinition(template, variableName, pos))
+    let destinationModule = findPathDefinition(template, variableName, pos);
+    return findLocationInFile(destinationModule);
 }
 
 export default function findPathDefinition(template: Template, variableName: string, pos: htmlBars.Position): PathSource {

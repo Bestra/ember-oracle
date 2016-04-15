@@ -7,13 +7,14 @@ export interface Template {
 
 export interface BoundPath {
     type: string;
-    name;
-    sourceModule;
+    name: string;
+    sourceModule: string;
 };
+
 export interface BlockParam {
     type: string;
-    name;
-    sourceModule;
+    name: string;
+    sourceModule: string;
     isYielded: boolean;
     blockNode: htmlBars.BlockStatement;
     index;

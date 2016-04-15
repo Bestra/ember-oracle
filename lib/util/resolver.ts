@@ -6,19 +6,25 @@ import * as assert from 'assert'
 
 export let podPrefix = "pods";
 export let appRootName = "app";
-export let appRootPath = ""; // this will need to allow for engines later
-
-type ModulePrefix = 'component' | 'template' | 'route' | 'controller';
+export let rootPath = ""; // this will need to allow for engines later
 
 function singularize(str: string) {
     return str.slice(0, str.length - 1);
 };
 
+export function fullAppPath() {
+    return path.join(rootPath, appRootName);
+}
+
+export function fullPodPath() {
+    return path.join(rootPath, appRootName, podPrefix);
+}
+
 // Note that all paths should be relative starting with appRootName
 export function moduleNameFromPath(filePath: string): string {
     let isPod = filePath.match(/pods/)
     if (isPod) {
-        let prefix = path.basename(filePath).split('.')[0] as ModulePrefix;
+        let prefix = path.basename(filePath).split('.')[0]
         let modulePath;
         if (prefix === "component") {
             modulePath = path.dirname(filePath.split('app/pods/components/')[1]);
@@ -66,17 +72,17 @@ export function templateContext(templateModule: string): string {
     return newRoot + path.replace("components/","");
 };
 
-export function setAppRootPath(aPath: string) {
-    appRootPath = aPath;
+export function setRootPath(aPath: string) {
+    rootPath = aPath;
 }
 export function createAbsolutePath(relativePath: string) {
-    assert.notEqual(appRootPath, '', "resolver.appRootPath must be set");
-    return path.join(appRootPath, relativePath);
+    assert.notEqual(rootPath, '', "resolver.appRootPath must be set");
+    return path.join(rootPath, relativePath);
 }
 export function pathsFromName(moduleName: string): string[] {
     return [true, false].map((t) => createPath(t, moduleName));
 };
 
 export function filePathForModule(moduleName: string): string {
-    return pathsFromName(moduleName).map(createAbsolutePath).filter(files.exists)[0];
+    return pathsFromName(moduleName).map(createAbsolutePath).filter(fs.existsSync)[0];
 }
