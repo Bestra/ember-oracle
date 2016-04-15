@@ -1,0 +1,16 @@
+function! EmberDef()
+  let def_command = "sh ~/ember-analyzer/bin/findDef.sh"
+  let full_command = join([def_command, expand('%:p'), line('.'), col('.'), expand("<cword>")], " ")
+  let location = system(full_command)
+  echo location
+  let segments = split(location, ":")
+  let new_path = segments[0]
+  let line = segments[1]
+  let column = segments[2]
+
+  exec "edit ".new_path
+  call cursor(line, column)
+
+endfunction
+
+nnoremap <leader>f :call EmberDef()<cr>

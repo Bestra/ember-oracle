@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
 
-import defineComponents from '../components/';
 import { findDefinition } from '../hbs';
 
 import { ok } from 'assert'
@@ -18,32 +17,36 @@ export default function start(appPath: string) {
     let router = new Router();
 
     let components = [] //defineComponents(appRoot);
-    
+
     registry.registerAppModules();
-    
-    router.get('/', function(ctx, next) {
+
+    router.get('/', function (ctx, next) {
         ctx.body = "Hey";
     });
-    
-    router.get('/components', function(ctx, next) {
+
+    router.get('/components', function (ctx, next) {
         ctx.body = components.map((c) => c.name).toString();
     });
 
-    router.get('/components/:name', function(ctx, next) {
+    router.get('/components/:name', function (ctx, next) {
         ctx.body = JSON.stringify(components.find((c) => c.name === ctx.params.name));
     });
 
-    router.get('/templates/definition', function(ctx, next) {
+    router.get('/templates/definition', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
         let src = fs.readFileSync(fullPath, 'utf8');
-        ctx.body = JSON.stringify(
+        let position =
             findDefinition(
                 { filePath: fullPath, source: src },
                 ctx.query.name,
-                {line: ctx.query.line, column: ctx.query.column}
-            )
-        );
+                { line: ctx.query.line, column: ctx.query.column }
+            );
+        if (ctx.query.format === "compact") {
+            ctx.body = [position.filePath, position.loc.line, position.loc.column].join(':');
+        } else {
+            ctx.body = JSON.stringify(position);
+        }
     });
 
     app.use(router.routes())

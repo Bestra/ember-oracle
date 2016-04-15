@@ -82,7 +82,8 @@ function findYieldLocation(blockParam: BlockParam) {
     return { filePath: yieldTemplate, loc: yieldedVarLoc }
 }
 
-function findLocationInFile(varToFind: PathSource) {
+type FileLocation = {filePath; loc: {line; column}};
+function findLocationInFile(varToFind: PathSource): FileLocation  {
     console.log(varToFind);
     if (isBlockParam(varToFind)) {
         if (varToFind.isYielded) {
@@ -99,6 +100,9 @@ function findLocationInFile(varToFind: PathSource) {
         
         let propertyLocation = ember.propertyLocation(varToFind.sourceModule, varToFind.name);
         console.log("location is >>>>", propertyLocation)
+        if (!propertyLocation) {
+            propertyLocation = {line: 0, column: 0};
+        }
         return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: propertyLocation }
     }
 
