@@ -5,6 +5,11 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     function enter<T>(node: T): void;
     function exit<T>(node: T): void;
 
+/**
+ * These definitions were adapted from the ones 
+ * pulled from htmlbars/packages/htmlbars-syntax/lib/builders.js
+ * For now I've included the originals as comments for reference
+ */
 
     export interface MustacheStatement {
         path: PathExpression;

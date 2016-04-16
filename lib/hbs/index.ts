@@ -1,7 +1,3 @@
-/**
- * A variable of any kind in the template
- */
-
 import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 import * as path from 'path'
 import * as fs from 'fs'

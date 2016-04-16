@@ -3,7 +3,7 @@ import * as recast from 'recast'
 import * as fs from 'fs'
 
 let babel = require('babel-core');
-import * as AST from '../components/ast'
+import * as AST from '../ember/ast'
 
 type Prop = {[index: string]: {line: number; column: number}}
 export function findProps(jsPath: string){ 
