@@ -8,7 +8,10 @@ function! EmberDef()
   let line = segments[1]
   let column = segments[2]
 
-  exec "edit ".new_path
+  if current_file !=? new_path
+    exec "edit ".new_path
+  endif
+
   call cursor(line, column)
 
 endfunction

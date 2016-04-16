@@ -13,10 +13,3 @@ export function getFiles(rootDir: string, extensions: string[]) {
         return path.join(rootDir, file);
     })
 }
-
-function processFiles(filePaths: Array<string>, handler: (path: string, src: string) => void) {
-    filePaths.forEach((p) => {
-        let content = fs.readFileSync(p, 'utf8');
-        handler(p, content);
-    });
-}

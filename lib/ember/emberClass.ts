@@ -5,10 +5,11 @@ import * as fs from 'fs'
 let babel = require('babel-core');
 import * as AST from '../components/ast'
 
+type Prop = {[index: string]: {line: number; column: number}}
 export function findProps(jsPath: string){ 
     let src = fs.readFileSync(jsPath, 'utf8');   
     let ast = recast.parse(src, {esprima: babel});
-    let propList = {};
+    let propList: Prop = {};
     recast.visit(ast, {
         visitExportDefaultDeclaration: function(path) {
             let node = path.node;

@@ -1,3 +1,9 @@
+/**
+ * These definitions were adapted from the ones 
+ * pulled from htmlbars/packages/htmlbars-syntax/lib/builders.js
+ * For now I've included the originals as comments for reference
+ */
+
 export interface MustacheStatement {   
     path: PathExpression;
     params: Param[];
