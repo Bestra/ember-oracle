@@ -19,7 +19,14 @@ let SUPPORTED_MODULES = {
     'view:': '.js'
 };
 
-let registry = {
+interface Dict<T> {
+    [index: string]: T
+}
+
+type RegistryEntry = {filePath; definition};
+type RegistryType = Dict<RegistryEntry>;
+
+let registry: Dict<RegistryType>  = {
     component: {},
     controller: {},
     router: {},
@@ -29,8 +36,6 @@ let registry = {
     view: {}
 };
 
-
-
 /**
  * Creates a new module for the given path
  */
@@ -39,7 +44,7 @@ export function registerPath(filePath: string) {
     let moduleType = moduleName.split(':')[0];
     let modulePath = moduleName.split(':')[1];
     if (registry[moduleType]) {
-        registry[moduleType][modulePath] = { filePath };
+        registry[moduleType][modulePath] = { filePath, definition: null};
         return moduleName;
     } else {
         return null;
@@ -70,3 +75,10 @@ export function lookup(moduleName: string) {
     console.log(`registry.lookup ${moduleName} in ${JSON.stringify(registry[moduleType], null, 2)}`);
     return registry[moduleType][modulePath];
 }
+
+/**
+ * Given a name like foo/my-component
+ */
+export function findComponent(helperName: string) {
+    return lookup(`component:${helperName}`);
+};

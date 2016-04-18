@@ -5,19 +5,32 @@ export interface Template {
     source;
 }
 
-export interface BoundPath {
-    type: string;
-    name: string;
-    sourceModule: string;
+type FilePosition = {filePath; position: htmlBars.Position};
+
+export interface ASTBacked<T extends htmlBars.ASTNode> {
+    astNode: T;
+}
+
+export interface SourceDefineable {
+    definedInSourceAt: FilePosition; 
+}
+
+export interface TemplateDefineable {
+    definedInTemplateAt: FilePosition; 
+}
+
+export interface Path extends SourceDefineable, ASTBacked<htmlBars.PathExpression> {
+    template;
+}
+
+
+export interface BlockParam extends TemplateDefineable {
+    path: htmlBars.PathExpression;
+    index: number;
+    block;
 };
 
-export interface BlockParam {
-    type: string;
-    name: string;
-    sourceModule: string;
-    isYielded: boolean;
-    blockNode: htmlBars.BlockStatement;
-    index;
-};
-
-export type PathSource = BoundPath | BlockParam;
+export interface ComponentInvocation extends SourceDefineable, ASTBacked<htmlBars.MustacheStatement> {
+    attrs: any[];
+    template;
+}
