@@ -76,6 +76,9 @@ export function lookup(moduleName: string) {
     return registry[moduleType][modulePath];
 }
 
+export function lookupPath(filePath) {
+    return lookup(resolver.moduleNameFromPath(filePath);
+}
 /**
  * Given a name like foo/my-component
  */

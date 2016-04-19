@@ -144,9 +144,13 @@ export class Template {
     get filePath() {
         return lookup(this.moduleName).filePath;
     }
-
+ 
+    _astNode;
     get astNode() {
-        return htmlBars.parse(this.filePath);
+        if (this._astNode) { return this._astNode }
+        let src = fs.readFileSync(this.filePath);
+        this._astNode = htmlBars.parse(src);
+        return this._astNode;
     }
 
 

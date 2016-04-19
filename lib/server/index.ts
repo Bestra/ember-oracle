@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
 
-import { findDefinition } from '../hbs';
+import { Template } from '../hbs';
 
 import { ok } from 'assert'
 export default function start(appPath: string) {
@@ -35,15 +35,13 @@ export default function start(appPath: string) {
     router.get('/templates/definition', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
-        let src = fs.readFileSync(fullPath, 'utf8');
-        let position =
-            findDefinition(
-                { filePath: fullPath, source: src },
-                ctx.query.name,
-                { line: ctx.query.line, column: ctx.query.column }
-            );
+        let template = new Template(resolver.moduleNameFromPath(fullPath));
+        
+        let queryPosition = { line: ctx.query.line, column: ctx.query.column };
+        let defineable = template.parsePosition(queryPosition);
+        let position = defineable.definedAt
         if (ctx.query.format === "compact") {
-            ctx.body = [position.filePath, position.loc.line, position.loc.column].join(':');
+            ctx.body = [position.filePath, position.position.line, position.position.column].join(':');
         } else {
             ctx.body = JSON.stringify(position);
         }
