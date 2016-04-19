@@ -72,6 +72,10 @@ export function templateContext(templateModule: string): string {
     return newRoot + path.replace("components/","");
 };
 
+export function componentTemplate(componentModule: string) {
+    return `template:components/${componentModule}`;
+}
+
 export function setRootPath(aPath: string) {
     rootPath = aPath;
 }
