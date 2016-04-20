@@ -7,7 +7,8 @@ import * as resolver from './resolver';
 import * as files from './files';
 import * as _ from 'lodash';
 import * as path from 'path';
-import * as util from 'util'
+import * as util from 'util';
+import { readFileSync } from 'fs';
 
 let SUPPORTED_MODULES = {
     'component': '.js',
@@ -77,7 +78,7 @@ export function lookup(moduleName: string) {
 }
 
 export function lookupPath(filePath) {
-    return lookup(resolver.moduleNameFromPath(filePath);
+    return lookup(resolver.moduleNameFromPath(filePath));
 }
 /**
  * Given a name like foo/my-component
@@ -85,3 +86,7 @@ export function lookupPath(filePath) {
 export function findComponent(helperName: string) {
     return lookup(`component:${helperName}`);
 };
+
+export function fileContents(moduleName: string) {
+    return readFileSync(lookup(moduleName).filePath);
+}

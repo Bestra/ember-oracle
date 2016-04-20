@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import * as ember from '../ember'
 import * as resolver from '../util/resolver'
-import {findComponent, lookup} from '../util/registry'
+import {findComponent, lookup, fileContents} from '../util/registry'
 import * as _ from 'lodash'
 import {
     containsPosition,
@@ -20,7 +20,7 @@ export interface Defineable {
 class NullPosition implements Defineable {
     template: Template;
     position: Position;
-    
+
     constructor(template, position) {
         this.template = template;
         this.position = position;
@@ -31,7 +31,7 @@ class NullPosition implements Defineable {
             position: this.position
         }
     }
-    
+
 }
 
 class TemplateMember<T> implements Defineable {
@@ -61,11 +61,11 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
 
 export class Block extends Mustache {
     astNode: htmlBars.BlockStatement;
-    
+
     get blockParams() {
         return this.astNode.program.blockParams;
     }
-    
+
     blockParamDefinition(_index): FilePosition {
         return {
             filePath: this.containingTemplate.filePath,
@@ -122,7 +122,7 @@ export class Template {
     constructor(moduleName: string) {
         this.moduleName = moduleName;
     }
-    
+
     get components() {
         let blockComponents = this.blocks.filter((block) => {
             return !!findComponent(block.pathString)
@@ -144,11 +144,12 @@ export class Template {
     get filePath() {
         return lookup(this.moduleName).filePath;
     }
- 
+
     _astNode;
     get astNode() {
         if (this._astNode) { return this._astNode }
-        let src = fs.readFileSync(this.filePath);
+
+        let src = fileContents(this.moduleName);
         this._astNode = htmlBars.parse(src);
         return this._astNode;
     }
@@ -163,13 +164,23 @@ export class Template {
         return yieldNode.params[index].loc.start;
     }
 
-    blockParamFromPath(path: Path) {
-        return this.blocks.find(block => {
+    blockParamFromPath(path: Path): BlockParam {
+        let foundBlock = _.find(this.blocks, (block => {
             return containsPosition(block.astNode, path.astNode.loc.start) &&
                 block.blockParams.indexOf(path.root) > -1
-        })
+        }));
+
+        if (!!foundBlock) {
+            return new BlockParam(
+                this,
+                path.astNode,
+                foundBlock,
+                foundBlock.blockParams.indexOf(path.root))
+        } else {
+            return null;
+        }
     }
-    
+
     parsePosition(position: Position): Defineable {
         // check in order of likelihood
         // is it a path?
