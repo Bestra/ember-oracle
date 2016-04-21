@@ -73,7 +73,6 @@ export function lookup(moduleName: string) {
     
     let moduleType = moduleName.split(':')[0];
     let modulePath = moduleName.split(':')[1];
-    console.log(`registry.lookup ${moduleName} in ${JSON.stringify(registry[moduleType], null, 2)}`);
     return registry[moduleType][modulePath];
 }
 
@@ -88,5 +87,7 @@ export function findComponent(helperName: string) {
 };
 
 export function fileContents(moduleName: string) {
-    return readFileSync(lookup(moduleName).filePath);
+    console.log("looking up file for ", moduleName);
+    console.log("path is ", lookup(moduleName).filePath)
+    return readFileSync(lookup(moduleName).filePath, 'utf8');
 }

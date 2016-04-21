@@ -326,6 +326,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface Program {
+        type: string;
         body: any[];
         blockParams: string[];
         loc: Loc;

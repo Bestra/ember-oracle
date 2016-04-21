@@ -21,6 +21,7 @@ class NullPosition implements Defineable {
     template: Template;
     position: Position;
 
+//TODO: make this take a node
     constructor(template, position) {
         this.template = template;
         this.position = position;
@@ -31,7 +32,6 @@ class NullPosition implements Defineable {
             position: this.position
         }
     }
-
 }
 
 class TemplateMember<T> implements Defineable {
@@ -82,7 +82,14 @@ export class ComponentInvocation extends Block {
     }
 
     get templateFilePath() {
-        return lookup(this.templateModule);
+        return lookup(this.templateModule).filePath;
+    }
+    
+    get definedAt() {
+        return {
+            filePath: this.templateFilePath,
+            position: {line: 0, column: 0}
+        }
     }
 
     blockParamDefinition(index): FilePosition {
@@ -98,6 +105,19 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
 
     get root() {
         return this.astNode.parts[0];
+    }
+
+    get definedAt() {
+        let contextModule = resolver.templateContext(
+            this.containingTemplate.moduleName
+        )
+        let position = ember.propertyLocation(
+            contextModule,
+            this.root);
+        return {
+            filePath: lookup(contextModule).filePath,
+            position: position
+        }
     }
 }
 
@@ -116,13 +136,18 @@ export class BlockParam extends Path {
     }
 }
 
+function findContainingComponent(template: Template, pathExpr) {
+    const hasPath = n => n.astNode.path === pathExpr; 
+    return _.find(template.components, hasPath) 
+}
+
 export class Template {
     moduleName: string;
 
     constructor(moduleName: string) {
         this.moduleName = moduleName;
     }
-
+    
     get components() {
         let blockComponents = this.blocks.filter((block) => {
             return block instanceof ComponentInvocation
@@ -151,7 +176,7 @@ export class Template {
         return lookup(this.moduleName).filePath;
     }
 
-    _astNode;
+    _astNode: htmlBars.Program;
     get astNode() {
         if (this._astNode) { return this._astNode }
 
@@ -159,7 +184,6 @@ export class Template {
         this._astNode = htmlBars.parse(src);
         return this._astNode;
     }
-
 
     getYieldPosition(index) {
         let yieldNode = findNodes<htmlBars.MustacheStatement>(
@@ -192,6 +216,7 @@ export class Template {
         // is it a path?
         // if it's not, return a NullLocation
         // if it is, check if it's a blockParam
+        console.log("looking up position ", position)
         let pathExpr = findNodes<htmlBars.PathExpression>(
             this.astNode,
             'PathExpression',
@@ -200,8 +225,9 @@ export class Template {
             }
         )[0];
         if (pathExpr) {
+            let component = findContainingComponent(this, pathExpr);
             let foundPath = new Path(this, pathExpr);
-            return this.blockParamFromPath(foundPath) || foundPath;
+            return this.blockParamFromPath(foundPath) || component || foundPath;
         } else {
             // eventually this should include actions, etc.
             // for now if it's not a path we don't care

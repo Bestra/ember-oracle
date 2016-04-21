@@ -65,6 +65,15 @@ export function createPath(isPod, moduleName) {
     return filePath.join('/');
 };
 
+
+export function templateForModule(moduleName: string) {
+    WIIIIIIIIIIIIIIIP
+    let [root, path] = moduleName.split(':');
+    let newRoot = "template";
+    let newPath = path.match("components") ? "component:" : "controller:";
+    return newRoot + path.replace("components/","");
+}
+
 export function templateContext(templateModule: string): string {
     let parts = templateModule.split(':');
     let path = parts[1];

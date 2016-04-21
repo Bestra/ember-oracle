@@ -15,21 +15,11 @@ export default function start(appPath: string) {
     let appDir = path.join(appPath, resolver.appRootName);
     let app = new Koa();
     let router = new Router();
-
-    let components = [] //defineComponents(appRoot);
-
+    
     registry.registerAppModules();
 
     router.get('/', function (ctx, next) {
         ctx.body = "Hey";
-    });
-
-    router.get('/components', function (ctx, next) {
-        ctx.body = components.map((c) => c.name).toString();
-    });
-
-    router.get('/components/:name', function (ctx, next) {
-        ctx.body = JSON.stringify(components.find((c) => c.name === ctx.params.name));
     });
 
     router.get('/templates/definition', function (ctx, next) {
@@ -37,7 +27,7 @@ export default function start(appPath: string) {
         let fullPath = path.resolve(ctx.query.path);
         let template = new Template(resolver.moduleNameFromPath(fullPath));
         
-        let queryPosition = { line: ctx.query.line, column: ctx.query.column };
+        let queryPosition = { line: parseInt(ctx.query.line), column: parseInt(ctx.query.column) };
         let defineable = template.parsePosition(queryPosition);
         let position = defineable.definedAt
         if (ctx.query.format === "compact") {

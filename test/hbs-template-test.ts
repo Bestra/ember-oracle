@@ -91,11 +91,21 @@ describe('Template', function () {
           .thenReturn(
           `{{#my-thing things as |foo|}}{{foo.bar.baz}}{{/my-thing}}`
           );
-        let result = parse<hbs.BlockParam>(1, 40)
-        assertType(result, 'BlockParam');
-        assert.equal(result.root, 'foo', 'still acts like a path');
-        assert.ok(result.block, 'has a reference to the block');
-        assert.equal(result.block.pathString, 'my-thing')
+        let pathResult = parse<hbs.BlockParam>(1, 40)
+        assertType(pathResult, 'BlockParam');
+        assert.equal(pathResult.block.pathString, 'my-thing')
+      })
+      it(`returns the containing component if the search hits the mustache path
+      and the component is defined`, function () {
+        td.when(registry.fileContents("template:foo"))
+          .thenReturn(
+          `{{#my-component things as |foo|}}{{foo.bar.baz}}{{/my-component}}`
+          );
+         td.when(registry.findComponent('my-component'))
+          .thenReturn(true);
+        let pathResult = parse<hbs.ComponentInvocation>(1, 5)
+        assertType(pathResult, 'ComponentInvocation');
+        assert.equal(pathResult.pathString, 'my-component')
       })
     })
   })
