@@ -88,7 +88,7 @@ export class ComponentInvocation extends Block {
     blockParamDefinition(index): FilePosition {
         return {
             filePath: this.templateFilePath,
-            position: new Template(this.templateModule).yieldPosition(index)
+            position: new Template(this.templateModule).getYieldPosition(index)
         }
     }
 }
@@ -125,21 +125,27 @@ export class Template {
 
     get components() {
         let blockComponents = this.blocks.filter((block) => {
-            return !!findComponent(block.pathString)
-        }).map((block) => new ComponentInvocation(this, block))
+            return block instanceof ComponentInvocation
+        });
 
         let mustacheComponents = findNodes<htmlBars.MustacheStatement>(
             this.astNode,
             'MustacheStatement',
-            (n) => !!findComponent(n.path.original)
-        ).map((n) => new ComponentInvocation(this, n));
+            n => !!findComponent(n.path.original)
+        ).map(n => new ComponentInvocation(this, n));
 
         return blockComponents.concat(mustacheComponents);
     }
 
     get blocks() {
         return findNodes<htmlBars.BlockStatement>(this.astNode, 'BlockStatement', () => true)
-            .map(node => new Block(this, node));
+            .map((node) => {
+                if (!!findComponent(node.path.original)) {
+                    return new ComponentInvocation(this, node);
+                } else {
+                    return new Block(this, node);
+                }
+            });
     }
     get filePath() {
         return lookup(this.moduleName).filePath;
@@ -155,7 +161,7 @@ export class Template {
     }
 
 
-    yieldPosition(index) {
+    getYieldPosition(index) {
         let yieldNode = findNodes<htmlBars.MustacheStatement>(
             this.astNode,
             'MustacheStatement',
@@ -189,7 +195,9 @@ export class Template {
         let pathExpr = findNodes<htmlBars.PathExpression>(
             this.astNode,
             'PathExpression',
-            (node) => containsPosition(node, position)
+            (node) => {
+                return containsPosition(node, position)
+            }
         )[0];
         if (pathExpr) {
             let foundPath = new Path(this, pathExpr);
