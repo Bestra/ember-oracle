@@ -37,13 +37,16 @@ let registry: Dict<RegistryType>  = {
     view: {}
 };
 
+let registeredFiles: Dict<string> = {};
+
 /**
  * Creates a new module for the given path
  */
-export function registerPath(filePath: string) {
-    let moduleName = resolver.moduleNameFromPath(filePath);
-    let moduleType = moduleName.split(':')[0];
-    let modulePath = moduleName.split(':')[1];
+export function registerPath(filePath: string, appRoot: string) {
+    let moduleName = resolver.moduleNameFromPath(filePath, appRoot);
+    console.log('registering ', moduleName)
+    registeredFiles[filePath] = moduleName; 
+    let [moduleType, modulePath] = moduleName.split(':');
     if (registry[moduleType]) {
         registry[moduleType][modulePath] = { filePath, definition: null};
         return moduleName;
@@ -54,17 +57,31 @@ export function registerPath(filePath: string) {
 
 export function registerAppModules() {
     let appPath = resolver.fullAppPath();
-    let podPath = resolver.fullPodPath();
+    return registerModules(resolver.fullAppPath(), resolver.podPrefix)
+}
 
-    let podModules = files.getFiles(podPath, ['.js', '.hbs']).map((p) => registerPath(p));
+export function registerModules(rootPath, podPrefix) {
+    console.log("registering modules in ", rootPath)
+
+    let appPath = rootPath;
+    
+    let podPath = path.join(rootPath,podPrefix);
+
+    let podModules = files.getFiles(podPath, ['.js', '.hbs']).map(p => registerPath(p, rootPath));
+    console.log("    registered ", podModules.length, "pod modules")
     let otherModules = [];
     _.forEach(SUPPORTED_MODULES, (fileType, moduleName) => {
         let modulePath = path.join(appPath, moduleName + 's');
-        otherModules.push(files.getFiles(modulePath, [fileType]).map((p) => registerPath(p)))
-    });
+        otherModules.push(files.getFiles(modulePath, [fileType]).map(p => registerPath(p, rootPath)))
+    });  
+    console.log("    registered ", _.flatten(otherModules).length, "other modules")
 
-    return podModules.concat(_.flatten(otherModules));
+    let found = podModules.concat(_.flatten(otherModules));
+    console.log("    registered ", found.length, "total modules")
+    return found;
 }
+
+
 
 /**
  * Only retrieve items from the registry by module name
@@ -76,9 +93,9 @@ export function lookup(moduleName: string) {
     return registry[moduleType][modulePath];
 }
 
-export function lookupPath(filePath) {
-    return lookup(resolver.moduleNameFromPath(filePath));
-}
+export function lookupModuleName(filePath) {
+    return registeredFiles[filePath];
+};
 /**
  * Given a name like foo/my-component
  */
@@ -87,7 +104,7 @@ export function findComponent(helperName: string) {
 };
 
 export function fileContents(moduleName: string) {
-    console.log("looking up file for ", moduleName);
+    console.log("looking up file contents for ", moduleName);
     console.log("path is ", lookup(moduleName).filePath)
     return readFileSync(lookup(moduleName).filePath, 'utf8');
 }

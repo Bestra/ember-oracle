@@ -9,15 +9,15 @@ import * as registry from '../util/registry'
 import { Template } from '../hbs';
 
 import { ok } from 'assert'
-export default function start(appPath: string) {
+export default function start(appPath: string, enginePaths: string[]) {
     ok(path.isAbsolute(appPath), "app root must be an absolute path");
     resolver.setRootPath(appPath);
     let appDir = path.join(appPath, resolver.appRootName);
     let app = new Koa();
     let router = new Router();
     
-    registry.registerAppModules();
-
+    let mods = registry.registerAppModules();
+    enginePaths.forEach(p => registry.registerModules(p, "pods"));
     router.get('/', function (ctx, next) {
         ctx.body = "Hey";
     });
@@ -25,6 +25,8 @@ export default function start(appPath: string) {
     router.get('/files/alternate', function (ctx, next) {
         let fullPath = path.resolve(ctx.query.path);
         let moduleName = resolver.moduleNameFromPath(fullPath);
+        console.log("looking up alternate for module ", moduleName)
+
         let associated = resolver.alternateModule(moduleName);
         ctx.body = registry.lookup(associated).filePath;
     });
