@@ -1,16 +1,19 @@
+/**
+   * These definitions were adapted from the ones 
+   * pulled from htmlbars/packages/htmlbars-syntax/lib/builders.js
+   * For now I've included the originals as comments for reference
+   */
 declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export function parse(foo): Program;
-    export function traverse(node: any, visitor: any);
+    export function traverse(node: ASTNode, visitor: any);
 
-    function enter<T>(node: T): void;
-    function exit<T>(node: T): void;
+    export function enter<T>(node: T): void;
+    export function exit<T>(node: T): void;
 
-/**
- * These definitions were adapted from the ones 
- * pulled from htmlbars/packages/htmlbars-syntax/lib/builders.js
- * For now I've included the originals as comments for reference
- */
 
+    /**
+     * MustacheStatements are anything inside {{}}
+     */
     export interface MustacheStatement {
         path: PathExpression;
         params: Param[];
@@ -29,13 +32,12 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     //   };
     // }
 
-    export interface BlockStatement {
-        path: PathExpression;
-        params: Param[];
-        hash: Hash;
+    /**
+     * BlockStatements are a subset of MustacheStatement
+     */
+    export interface BlockStatement extends MustacheStatement {
         program: Program;
         inverse: any;
-        loc: Loc;
     }
     // export function buildBlock(path, params, hash, program, inverse, loc) {
     //   return {
@@ -71,7 +73,6 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
         hash: Hash;
         indent: number;
         loc: Loc;
-
     }
 
     // export function buildPartial(name, params, hash, indent) {
@@ -86,7 +87,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     export interface CommentStatement {
         value: any;
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -99,7 +100,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     export interface ConcatStatement {
         parts: any[];
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -157,7 +158,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface AttrNode {
         name: string;
         value: any;
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -188,7 +189,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
         path: PathExpression;
         params: Param[];
         hash: Hash;
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -204,7 +205,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface PathExpression {
         original: string;
         parts: string[];
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -223,7 +224,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface StringLiteral {
         value: any;
         original: any;
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -238,7 +239,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface BooleanLiteral {
         value: any;
         original: any;
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -253,7 +254,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface NumberLiteral {
         value: any;
         original: any;
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -268,7 +269,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface NullLiteral {
         value: any;
         original: any;
-                loc: Loc;
+        loc: Loc;
     }
 
     // export function buildNull() {
@@ -282,9 +283,9 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export interface UndefinedLiteral {
         value: any;
         original: any;
-                loc: Loc;
+        loc: Loc;
 
-        
+
     }
     // export function buildUndefined() {
     //   return {
@@ -298,7 +299,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     export interface Hash {
         pairs: HashPair[]
-                loc: Loc;
+        loc: Loc;
 
     }
 
@@ -312,8 +313,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     export interface HashPair {
         key: string;
-        value: any;
-                loc: Loc;
+        value: Param;
+        loc: Loc;
 
     }
     // export function buildPair(key, value) {
@@ -325,6 +326,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface Program {
+        type: string;
         body: any[];
         blockParams: string[];
         loc: Loc;
@@ -394,8 +396,8 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
         | Hash
         | HashPair
         | Program
-        | Position
-        | Loc;
+
+
 
     // function buildLoc(startLine, startColumn, endLine, endColumn, source) {
     //   if (arguments.length === 1) {

@@ -5,19 +5,3 @@ export interface Template {
     source;
 }
 
-export interface BoundPath {
-    type: string;
-    name: string;
-    sourceModule: string;
-};
-
-export interface BlockParam {
-    type: string;
-    name: string;
-    sourceModule: string;
-    isYielded: boolean;
-    blockNode: htmlBars.BlockStatement;
-    index;
-};
-
-export type PathSource = BoundPath | BlockParam;

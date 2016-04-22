@@ -1,6 +1,7 @@
 function! EmberDef()
-  let def_command = "sh ~/ember-analyzer/bin/findDef.sh"
-  let full_command = join([def_command, expand('%:p'), line('.'), col('.'), expand("<cword>")], " ")
+  let def_command = "~/ember-analyzer/bin/cli"
+  let current_file = expand('%:p')
+  let full_command = join([def_command, "define", current_file, line('.'), col('.'), expand("<cword>")], " ")
   let location = system(full_command)
   echo location
   let segments = split(location, ":")
@@ -16,4 +17,18 @@ function! EmberDef()
 
 endfunction
 
-nnoremap <leader>f :call EmberDef()<cr>
+function! EmberAlternate()
+  let command_path = "sh ~/ember-analyzer/bin/cli"
+  let current_file = expand('%:p')
+  let full_command = join([command_path, "alternate", current_file], " ")
+  let new_path = system(full_command)
+  echom new_path
+  
+  if current_file !=? new_path
+    exec "edit ".new_path
+  endif
+
+endfunction
+
+nnoremap <leader>fd :call EmberDef()<cr>
+nnoremap <leader>fa :call EmberAlternate()<cr>

@@ -1,0 +1,17 @@
+#!/bin/bash
+
+case "$1" in
+  define)
+    curl -s -G "localhost:5300/templates/definition" \
+    --data-urlencode "name=$5" \
+    --data-urlencode "column=$4" \
+    --data-urlencode "line=$3" \
+    --data-urlencode "path=$2" \
+    --data-urlencode "format=compact"
+    ;;
+  alternate)
+    curl -s -G "localhost:5300/files/alternate" \
+      --data-urlencode "path=$2" \
+      --data-urlencode "format=compact"
+    ;;
+esac

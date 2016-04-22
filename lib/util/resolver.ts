@@ -65,12 +65,37 @@ export function createPath(isPod, moduleName) {
     return filePath.join('/');
 };
 
+
+export function associatedTemplate(moduleName: string) {
+    let [root, path] = moduleName.split(':');
+    let newRoot = "template:"
+    if (root === "controller") {
+        return newRoot + path;
+    } else if (root === "component") {
+        return newRoot + "components/" + path;
+    } else {
+        return null;
+    }
+}
+
+export function alternateModule(moduleName) {
+    let [root, path] = moduleName.split(':');
+    if (root === "template") {
+        return templateContext(moduleName)
+    } else {
+        return associatedTemplate(moduleName)
+    }
+}
+
 export function templateContext(templateModule: string): string {
-    let parts = templateModule.split(':');
-    let path = parts[1];
+    let [_root, path] = templateModule.split(':');
     let newRoot = path.match("components") ? "component:" : "controller:";
     return newRoot + path.replace("components/","");
 };
+
+export function componentTemplate(componentModule: string) {
+    return `template:components/${componentModule}`;
+}
 
 export function setRootPath(aPath: string) {
     rootPath = aPath;

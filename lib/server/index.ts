@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
 
-import { findDefinition } from '../hbs';
+import { Template } from '../hbs';
 
 import { ok } from 'assert'
 export default function start(appPath: string) {
@@ -15,35 +15,30 @@ export default function start(appPath: string) {
     let appDir = path.join(appPath, resolver.appRootName);
     let app = new Koa();
     let router = new Router();
-
-    let components = [] //defineComponents(appRoot);
-
+    
     registry.registerAppModules();
 
     router.get('/', function (ctx, next) {
         ctx.body = "Hey";
     });
 
-    router.get('/components', function (ctx, next) {
-        ctx.body = components.map((c) => c.name).toString();
+    router.get('/files/alternate', function (ctx, next) {
+        let fullPath = path.resolve(ctx.query.path);
+        let moduleName = resolver.moduleNameFromPath(fullPath);
+        let associated = resolver.alternateModule(moduleName);
+        ctx.body = registry.lookup(associated).filePath;
     });
-
-    router.get('/components/:name', function (ctx, next) {
-        ctx.body = JSON.stringify(components.find((c) => c.name === ctx.params.name));
-    });
-
+    
     router.get('/templates/definition', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
-        let src = fs.readFileSync(fullPath, 'utf8');
-        let position =
-            findDefinition(
-                { filePath: fullPath, source: src },
-                ctx.query.name,
-                { line: ctx.query.line, column: ctx.query.column }
-            );
+        let template = new Template(resolver.moduleNameFromPath(fullPath));
+        
+        let queryPosition = { line: parseInt(ctx.query.line), column: parseInt(ctx.query.column) };
+        let defineable = template.parsePosition(queryPosition);
+        let position = defineable.definedAt
         if (ctx.query.format === "compact") {
-            ctx.body = [position.filePath, position.loc.line, position.loc.column].join(':');
+            ctx.body = [position.filePath, position.position.line, position.position.column].join(':');
         } else {
             ctx.body = JSON.stringify(position);
         }

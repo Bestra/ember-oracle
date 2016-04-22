@@ -21,6 +21,7 @@
     "walk-sync": "^0.2.6"
   },
   "devDependencies": {
-    "mocha": "^2.4.5"
+    "mocha": "^2.4.5",
+    "testdouble": "^1.4.1"
   }
 }

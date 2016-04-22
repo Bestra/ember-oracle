@@ -1,123 +1,237 @@
 import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 import * as path from 'path'
 import * as fs from 'fs'
-import {Template, BlockParam, PathSource} from './types'
-
 import * as ember from '../ember'
-
 import * as resolver from '../util/resolver'
+import {findComponent, lookup, fileContents} from '../util/registry'
+import * as _ from 'lodash'
+import {
+    containsPosition,
+    findNodes
+} from './util'
 
-function withinBlock(block: htmlBars.BlockStatement, position: htmlBars.Position): boolean {
-    return block.loc.start.line < position.line && block.loc.end.line > position.line;
+type Position = htmlBars.Position;
+type FilePosition = { filePath; position: Position };
+
+export interface Defineable {
+    definedAt: FilePosition;
 }
 
-function isComponent(path: string): boolean {
-    return !!path.match(/-/);
-};
+class NullPosition implements Defineable {
+    template: Template;
+    position: Position;
 
-function findBlockModule(block: htmlBars.BlockStatement): string {
-    let pathString = block.path.original;
-    if (isComponent(pathString)) {
-        return "template:components/" + pathString;
-    } else {
+//TODO: make this take a node
+    constructor(template, position) {
+        this.template = template;
+        this.position = position;
+    }
+    get definedAt() {
+        return {
+            filePath: this.template.filePath,
+            position: this.position
+        }
+    }
+}
+
+class TemplateMember<T> implements Defineable {
+    containingTemplate: Template;
+    astNode: T;
+
+    constructor(template, node) {
+        this.containingTemplate = template;
+        this.astNode = node;
+    }
+
+    get definedAt() {
         return null;
     }
-};
+}
 
-export function extractBlockParam(template: Template, pathName: string, position: htmlBars.Position): BlockParam {
-    let ast = htmlBars.parse(template.source);
-    let templateModule = resolver.moduleNameFromPath(template.filePath);
+export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
+{
+    get pathString() {
+        return this.astNode.path.original;
+    }
+    get attrs() {
+        let pairs = this.astNode.hash.pairs;
+        return _.map(pairs, 'key');
+    }
+}
 
-    let blocks: htmlBars.BlockStatement[] = [];
-    htmlBars.traverse(ast, {
-        BlockStatement: {
-            enter(node: htmlBars.BlockStatement) {
-                blocks.push(node);
-            }
+export class Block extends Mustache {
+    astNode: htmlBars.BlockStatement;
+
+    get blockParams() {
+        return this.astNode.program.blockParams;
+    }
+
+    blockParamDefinition(_index): FilePosition {
+        return {
+            filePath: this.containingTemplate.filePath,
+            position: this.astNode.loc.start
         }
-    });
-    return blocks
-        .filter(block => withinBlock(block, position))
-        .map(blockNode => {
-            let sourceModule = findBlockModule(blockNode);
-            return {
-                type: "BlockParam",
-                name: pathName,
-                blockNode,
-                index: blockNode.program.blockParams.indexOf(pathName),
-                sourceModule: sourceModule || templateModule,
-                isYielded: !!sourceModule
-            }
-        }).find(param => param.index > -1);
+    }
+
 }
 
-interface SourceLocation {
-    filePath: string;
-    loc: { line: number, column: number };
+export class ComponentInvocation extends Block {
+    isBlock: boolean;
+    get templateModule() {
+        return resolver.componentTemplate(this.pathString);
+    }
+
+    get templateFilePath() {
+        return lookup(this.templateModule).filePath;
+    }
+    
+    get definedAt() {
+        return {
+            filePath: this.templateFilePath,
+            position: {line: 0, column: 0}
+        }
+    }
+
+    blockParamDefinition(index): FilePosition {
+        return {
+            filePath: this.templateFilePath,
+            position: new Template(this.templateModule).getYieldPosition(index)
+        }
+    }
 }
 
-function isBlockParam(src: PathSource): src is BlockParam {
-    return src.type === "BlockParam"
+export class Path extends TemplateMember<htmlBars.PathExpression> {
+    astNode: htmlBars.PathExpression;
+
+    get root() {
+        return this.astNode.parts[0];
+    }
+
+    get definedAt() {
+        let contextModule = resolver.templateContext(
+            this.containingTemplate.moduleName
+        )
+        let position = ember.propertyLocation(
+            contextModule,
+            this.root);
+        return {
+            filePath: lookup(contextModule).filePath,
+            position: position
+        }
+    }
 }
 
-function findYieldLocation(blockParam: BlockParam) {
-    let yieldTemplate = resolver.filePathForModule(blockParam.sourceModule);
-    let yieldSrc = fs.readFileSync(yieldTemplate, 'utf8');
-    let ast = htmlBars.parse(yieldSrc);
-    let yieldedVarLoc;
-    htmlBars.traverse(ast, {
-        MustacheStatement: {
-            enter(node: htmlBars.MustacheStatement) {
-                if (node.params[blockParam.index]) {
-                    yieldedVarLoc = node.params[blockParam.index].loc.start;
+export class BlockParam extends Path {
+    index;
+    block: Block;
+
+    constructor(template, node, block, index) {
+        super(template, node);
+        this.block = block;
+        this.index = index;
+    }
+
+    get definedAt() {
+        return this.block.blockParamDefinition(this.index);
+    }
+}
+
+function findContainingComponent(template: Template, pathExpr) {
+    const hasPath = n => n.astNode.path === pathExpr; 
+    return _.find(template.components, hasPath) 
+}
+
+export class Template {
+    moduleName: string;
+
+    constructor(moduleName: string) {
+        this.moduleName = moduleName;
+    }
+    
+    get components() {
+        let blockComponents = this.blocks.filter((block) => {
+            return block instanceof ComponentInvocation
+        });
+
+        let mustacheComponents = findNodes<htmlBars.MustacheStatement>(
+            this.astNode,
+            'MustacheStatement',
+            n => !!findComponent(n.path.original)
+        ).map(n => new ComponentInvocation(this, n));
+
+        return blockComponents.concat(mustacheComponents);
+    }
+
+    get blocks() {
+        return findNodes<htmlBars.BlockStatement>(this.astNode, 'BlockStatement', () => true)
+            .map((node) => {
+                if (!!findComponent(node.path.original)) {
+                    return new ComponentInvocation(this, node);
+                } else {
+                    return new Block(this, node);
                 }
-            }
-        }
-    })
+            });
+    }
+    get filePath() {
+        return lookup(this.moduleName).filePath;
+    }
 
-    return { filePath: yieldTemplate, loc: yieldedVarLoc }
-}
+    _astNode: htmlBars.Program;
+    get astNode() {
+        if (this._astNode) { return this._astNode }
 
-type FileLocation = {filePath; loc: {line; column}};
-function findLocationInFile(varToFind: PathSource): FileLocation  {
-    console.log(varToFind);
-    if (isBlockParam(varToFind)) {
-        if (varToFind.isYielded) {
-            console.log("yielded");
-            return findYieldLocation(varToFind);
+        let src = fileContents(this.moduleName);
+        this._astNode = htmlBars.parse(src);
+        return this._astNode;
+    }
+
+    getYieldPosition(index) {
+        let yieldNode = findNodes<htmlBars.MustacheStatement>(
+            this.astNode,
+            'MustacheStatement',
+            node => node.path.original === 'yield'
+        )[0];
+        return yieldNode.params[index].loc.start;
+    }
+
+    blockParamFromPath(path: Path): BlockParam {
+        let foundBlock = _.find(this.blocks, (block => {
+            return containsPosition(block.astNode, path.astNode.loc.start) &&
+                block.blockParams.indexOf(path.root) > -1
+        }));
+
+        if (!!foundBlock) {
+            return new BlockParam(
+                this,
+                path.astNode,
+                foundBlock,
+                foundBlock.blockParams.indexOf(path.root))
         } else {
-            // find the block expression in the source template
-            console.log("loc is", varToFind.blockNode.loc);
-            return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: varToFind.blockNode.loc.start }
+            return null;
         }
-    } else {
-        console.log("find controller", varToFind.sourceModule);
-        // call the findAttr function or something with the path's context.
-        
-        let propertyLocation = ember.propertyLocation(varToFind.sourceModule, varToFind.name);
-        console.log("location is >>>>", propertyLocation)
-        if (!propertyLocation) {
-            propertyLocation = {line: 0, column: 0};
-        }
-        return { filePath: resolver.filePathForModule(varToFind.sourceModule), loc: propertyLocation }
     }
 
-
-}
-
-export function findDefinition(template: Template, variableName: string, pos: htmlBars.Position) {
-    let destinationModule = findPathDefinition(template, variableName, pos);
-    return findLocationInFile(destinationModule);
-}
-
-export default function findPathDefinition(template: Template, variableName: string, pos: htmlBars.Position): PathSource {
-    let blockParam = extractBlockParam(template, variableName, pos);
-    if (blockParam) {
-        return blockParam;
-    } else {
-        let templateModule = resolver.moduleNameFromPath(template.filePath);
-        let templateContextModule = resolver.templateContext(templateModule);
-        return { type: "BoundPath", name: variableName, sourceModule: templateContextModule };
+    parsePosition(position: Position): Defineable {
+        // check in order of likelihood
+        // is it a path?
+        // if it's not, return a NullLocation
+        // if it is, check if it's a blockParam
+        console.log("looking up position ", position)
+        let pathExpr = findNodes<htmlBars.PathExpression>(
+            this.astNode,
+            'PathExpression',
+            (node) => {
+                return containsPosition(node, position)
+            }
+        )[0];
+        if (pathExpr) {
+            let component = findContainingComponent(this, pathExpr);
+            let foundPath = new Path(this, pathExpr);
+            return this.blockParamFromPath(foundPath) || component || foundPath;
+        } else {
+            // eventually this should include actions, etc.
+            // for now if it's not a path we don't care
+            return new NullPosition(this, position);
+        }
     }
 }
-
