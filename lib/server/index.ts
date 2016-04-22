@@ -22,6 +22,13 @@ export default function start(appPath: string) {
         ctx.body = "Hey";
     });
 
+    router.get('/files/alternate', function (ctx, next) {
+        let fullPath = path.resolve(ctx.query.path);
+        let moduleName = resolver.moduleNameFromPath(fullPath);
+        let associated = resolver.alternateModule(moduleName);
+        ctx.body = registry.lookup(associated).filePath;
+    });
+    
     router.get('/templates/definition', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
