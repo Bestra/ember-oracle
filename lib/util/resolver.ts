@@ -21,7 +21,7 @@ export function fullPodPath() {
 }
 
 // Note that all paths should be relative starting with appRootName
-export function moduleNameFromPath(absoluteFilePath: string, rootPath?: string): string {
+export function moduleNameFromPath(absoluteFilePath: string, rootPath: string): string {
     let filePath = absoluteFilePath.split(rootPath)[1];
     console.log("resolver: getting module name from path ", filePath);
     

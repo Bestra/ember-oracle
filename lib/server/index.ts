@@ -24,7 +24,7 @@ export default function start(appPath: string, enginePaths: string[]) {
 
     router.get('/files/alternate', function (ctx, next) {
         let fullPath = path.resolve(ctx.query.path);
-        let moduleName = resolver.moduleNameFromPath(fullPath);
+        let moduleName = registry.lookupModuleName(fullPath);
         console.log("looking up alternate for module ", moduleName)
 
         let associated = resolver.alternateModule(moduleName);
@@ -34,7 +34,7 @@ export default function start(appPath: string, enginePaths: string[]) {
     router.get('/templates/definition', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
-        let template = new Template(resolver.moduleNameFromPath(fullPath));
+        let template = new Template(registry.lookupModuleName(fullPath));
         
         let queryPosition = { line: parseInt(ctx.query.line), column: parseInt(ctx.query.column) };
         let defineable = template.parsePosition(queryPosition);
