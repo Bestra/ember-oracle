@@ -44,7 +44,6 @@ let registeredFiles: Dict<string> = {};
  */
 export function registerPath(filePath: string, appRoot: string) {
     let moduleName = resolver.moduleNameFromPath(filePath, appRoot);
-    console.log('registering ', moduleName)
     registeredFiles[filePath] = moduleName; 
     let [moduleType, modulePath] = moduleName.split(':');
     if (registry[moduleType]) {
@@ -61,14 +60,11 @@ export function registerAppModules() {
 }
 
 export function registerModules(rootPath, podPrefix) {
-    console.log("registering modules in ", rootPath)
-
     let appPath = rootPath;
     
     let podPath = path.join(rootPath,podPrefix);
 
     let podModules = files.getFiles(podPath, ['.js', '.hbs']).map(p => registerPath(p, rootPath));
-    console.log("    registered ", podModules.length, "pod modules")
     let otherModules = [];
     _.forEach(SUPPORTED_MODULES, (fileType, moduleName) => {
         let modulePath = path.join(appPath, moduleName + 's');

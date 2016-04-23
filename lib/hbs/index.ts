@@ -21,7 +21,7 @@ class NullPosition implements Defineable {
     template: Template;
     position: Position;
 
-//TODO: make this take a node
+    //TODO: make this take a node
     constructor(template, position) {
         this.template = template;
         this.position = position;
@@ -82,13 +82,16 @@ export class ComponentInvocation extends Block {
     }
 
     get templateFilePath() {
-        return lookup(this.templateModule).filePath;
+        let m = lookup(this.templateModule); 
+        return m && m.filePath;
     }
-    
+
     get definedAt() {
+        let filePath = this.templateFilePath ||
+            lookup('component:' + this.pathString).filePath;
         return {
-            filePath: this.templateFilePath,
-            position: {line: 0, column: 0}
+            filePath,
+            position: { line: 0, column: 0 }
         }
     }
 
@@ -111,9 +114,12 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
         let contextModule = resolver.templateContext(
             this.containingTemplate.moduleName
         )
-        let position = ember.propertyLocation(
-            contextModule,
-            this.root);
+
+        let context = new ember.EmberClass(contextModule)
+        console.log("context is:")
+        console.log(context);
+        let position = context.properties[this.root].position
+
         return {
             filePath: lookup(contextModule).filePath,
             position: position
@@ -137,8 +143,8 @@ export class BlockParam extends Path {
 }
 
 function findContainingComponent(template: Template, pathExpr) {
-    const hasPath = n => n.astNode.path === pathExpr; 
-    return _.find(template.components, hasPath) 
+    const hasPath = n => n.astNode.path === pathExpr;
+    return _.find(template.components, hasPath)
 }
 
 export class Template {
@@ -147,7 +153,7 @@ export class Template {
     constructor(moduleName: string) {
         this.moduleName = moduleName;
     }
-    
+
     get components() {
         let blockComponents = this.blocks.filter((block) => {
             return block instanceof ComponentInvocation
