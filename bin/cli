@@ -14,4 +14,9 @@ case "$1" in
       --data-urlencode "path=$2" \
       --data-urlencode "format=compact"
     ;;
+  parents)
+    curl -s -G "localhost:5300/templates/parents" \
+      --data-urlencode "path=$2" \
+      --data-urlencode "format=compact"
+    ;;
 esac

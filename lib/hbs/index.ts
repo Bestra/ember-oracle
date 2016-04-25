@@ -76,10 +76,10 @@ export class Block extends Mustache {
 }
 
 export class ComponentInvocation extends Block {
-    isBlock: boolean;
     get templateModule() {
         return resolver.componentTemplate(this.pathString);
     }
+
 
     get templateFilePath() {
         let m = lookup(this.templateModule);
@@ -88,6 +88,17 @@ export class ComponentInvocation extends Block {
 
     get moduleName() {
         return 'component:' + this.pathString;
+    }
+
+    get component() {
+        return lookup(this.moduleName).definition;
+    }
+
+    get invokedAt() {
+        return {
+            filePath: lookup(this.containingTemplate.moduleName).filePath,
+            position: this.astNode.loc.start
+        }
     }
 
     get definedAt() {
@@ -150,10 +161,18 @@ function findContainingComponent(template: Template, pathExpr) {
     return _.find(template.components, hasPath)
 }
 
+class NoContext {
+    definition;
+    moduleName;
+    constructor(moduleName) {
+        this.moduleName = moduleName;
+    }
+}
 export class Template {
     moduleName: string;
-    renderingContext() {
+    get renderingContext() {
         return lookup(resolver.templateContext(this.moduleName))
+            || new NoContext(this.moduleName);
     }
 
     constructor(moduleName: string) {
@@ -161,9 +180,11 @@ export class Template {
     }
 
     get components() {
-        let blockComponents = this.blocks.filter((block) => {
-            return block instanceof ComponentInvocation
-        });
+        let blockComponents = _(this.blocks).map((block) => {
+            if (block instanceof ComponentInvocation) {
+                return block;
+            }
+        }).compact().value();
 
         let mustacheComponents = findNodes<htmlBars.MustacheStatement>(
             this.astNode,

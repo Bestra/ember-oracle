@@ -4,6 +4,8 @@ import * as path from 'path';
 
 import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
+import * as callGraph from '../util/callGraph'
+import * as _ from 'lodash'
 
 import { Template } from '../hbs';
 
@@ -16,6 +18,7 @@ export default function start(appPath: string, enginePaths: string[]) {
     let router = new Router();
     
     init(appPath, enginePaths);
+    callGraph.init();
     router.get('/', function (ctx, next) {
         ctx.body = "Hey";
     });
@@ -41,6 +44,19 @@ export default function start(appPath: string, enginePaths: string[]) {
             ctx.body = [position.filePath, position.position.line, position.position.column].join(':');
         } else {
             ctx.body = JSON.stringify(position);
+        }
+    });
+    
+    router.get('/templates/parents', function (ctx, next) {
+        console.log(ctx.query);
+        let findParents = _.flow(registry.lookupModuleName, resolver.templateContext, callGraph.parentTemplates)
+        let fullPath = path.resolve(ctx.query.path);
+        
+        let parents = findParents(fullPath);
+        if (ctx.query.format === "compact") {
+            ctx.body = parents.join('\n');
+        } else {
+            ctx.body = JSON.stringify(parents);
         }
     });
 
