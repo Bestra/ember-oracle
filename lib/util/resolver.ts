@@ -38,8 +38,8 @@ export function moduleNameFromPath(absoluteFilePath: string, rootPath: string): 
     } else {
         //assuming segments like 'app/routes/foo/bar.js'
         let parts = filePath.split(/[\/\.]/);
-        let prefix = singularize(parts[1]);
-        let modulePath = parts.slice(2, -1);
+        let prefix = singularize(parts[0]);
+        let modulePath = parts.slice(1, -1);
 
         return prefix + ":" + modulePath.join('/');
     }

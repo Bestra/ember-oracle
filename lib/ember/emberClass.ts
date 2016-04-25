@@ -25,8 +25,6 @@ function extractProps(ast) {
                         p.key.name !== "actions";
                 }).forEach((k) => {
                     let p = new Property(k);
-                    console.log("found property")
-                    console.log(p)
                     propList[p.name] = p;
                 })
             }

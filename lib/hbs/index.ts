@@ -82,13 +82,17 @@ export class ComponentInvocation extends Block {
     }
 
     get templateFilePath() {
-        let m = lookup(this.templateModule); 
+        let m = lookup(this.templateModule);
         return m && m.filePath;
+    }
+
+    get moduleName() {
+        return 'component:' + this.pathString;
     }
 
     get definedAt() {
         let filePath = this.templateFilePath ||
-            lookup('component:' + this.pathString).filePath;
+            lookup(this.moduleName).filePath;
         return {
             filePath,
             position: { line: 0, column: 0 }
@@ -96,9 +100,10 @@ export class ComponentInvocation extends Block {
     }
 
     blockParamDefinition(index): FilePosition {
+        let position = lookup(this.templateModule).definition.getYieldPosition(index)
         return {
             filePath: this.templateFilePath,
-            position: new Template(this.templateModule).getYieldPosition(index)
+            position: position
         }
     }
 }
@@ -115,9 +120,7 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
             this.containingTemplate.moduleName
         )
 
-        let context = new ember.EmberClass(contextModule)
-        console.log("context is:")
-        console.log(context);
+        let context = lookup(contextModule).definition as ember.EmberClass
         let position = context.properties[this.root].position
 
         return {
@@ -149,6 +152,9 @@ function findContainingComponent(template: Template, pathExpr) {
 
 export class Template {
     moduleName: string;
+    renderingContext() {
+        return lookup(resolver.templateContext(this.moduleName))
+    }
 
     constructor(moduleName: string) {
         this.moduleName = moduleName;

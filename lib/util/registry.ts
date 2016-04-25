@@ -9,6 +9,8 @@ import * as _ from 'lodash';
 import * as path from 'path';
 import * as util from 'util';
 import { readFileSync } from 'fs';
+import { EmberClass } from '../ember';
+import { Template } from '../hbs'
 
 let SUPPORTED_MODULES = {
     'component': '.js',
@@ -24,10 +26,10 @@ interface Dict<T> {
     [index: string]: T
 }
 
-type RegistryEntry = {filePath; definition};
+type RegistryEntry = { filePath; definition };
 type RegistryType = Dict<RegistryEntry>;
 
-let registry: Dict<RegistryType>  = {
+let registry: Dict<RegistryType> = {
     component: {},
     controller: {},
     router: {},
@@ -38,16 +40,22 @@ let registry: Dict<RegistryType>  = {
 };
 
 let registeredFiles: Dict<string> = {};
-
+export {registry} ;
 /**
  * Creates a new module for the given path
  */
 export function registerPath(filePath: string, appRoot: string) {
     let moduleName = resolver.moduleNameFromPath(filePath, appRoot);
-    registeredFiles[filePath] = moduleName; 
+    registeredFiles[filePath] = moduleName;
     let [moduleType, modulePath] = moduleName.split(':');
     if (registry[moduleType]) {
-        registry[moduleType][modulePath] = { filePath, definition: null};
+        let def;
+        if (moduleType === 'template') {
+            def = new Template(moduleName);
+        } else {
+            def = new EmberClass(moduleName);
+        }
+        registry[moduleType][modulePath] = { filePath, definition: def };
         return moduleName;
     } else {
         return null;
@@ -56,20 +64,25 @@ export function registerPath(filePath: string, appRoot: string) {
 
 export function registerAppModules() {
     let appPath = resolver.fullAppPath();
-    return registerModules(resolver.fullAppPath(), resolver.podPrefix)
+    return registerModules(resolver.fullAppPath() + "/", resolver.podPrefix)
 }
 
 export function registerModules(rootPath, podPrefix) {
     let appPath = rootPath;
-    
-    let podPath = path.join(rootPath,podPrefix);
+
+    let podPath = path.join(rootPath, podPrefix);
 
     let podModules = files.getFiles(podPath, ['.js', '.hbs']).map(p => registerPath(p, rootPath));
+    console.log("    registered ", _.flatten(podModules).length, "modules in pods")
+
     let otherModules = [];
     _.forEach(SUPPORTED_MODULES, (fileType, moduleName) => {
         let modulePath = path.join(appPath, moduleName + 's');
-        otherModules.push(files.getFiles(modulePath, [fileType]).map(p => registerPath(p, rootPath)))
-    });  
+        console.log("looking for ", fileType, " files in ", modulePath)
+        let foundFiles = files.getFiles(modulePath, [fileType]).map(p => registerPath(p, rootPath))
+        console.log(foundFiles)
+        otherModules.push(foundFiles);
+    });
     console.log("    registered ", _.flatten(otherModules).length, "other modules")
 
     let found = podModules.concat(_.flatten(otherModules));
@@ -83,7 +96,7 @@ export function registerModules(rootPath, podPrefix) {
  * Only retrieve items from the registry by module name
  */
 export function lookup(moduleName: string) {
-    
+
     let moduleType = moduleName.split(':')[0];
     let modulePath = moduleName.split(':')[1];
     return registry[moduleType][modulePath];
@@ -100,7 +113,9 @@ export function findComponent(helperName: string) {
 };
 
 export function fileContents(moduleName: string) {
-    console.log("looking up file contents for ", moduleName);
-    console.log("path is ", lookup(moduleName).filePath)
     return readFileSync(lookup(moduleName).filePath, 'utf8');
+}
+
+export function allModules(type: string) {
+    return registry[type];
 }

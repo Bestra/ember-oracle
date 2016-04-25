@@ -2,12 +2,12 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Launch",
+			"name": "Server",
 			"type": "node",
 			"request": "launch",
-			"program": "${workspaceRoot}/bin/server.js",
+			"program": "${workspaceRoot}/dist/bin/server.js",
 			"stopOnEntry": false,
-			"args": ["~/mh/tahi/client/app"],
+			"args": ["/Users/bestra/mh/tahi/client/"],
 			"cwd": "${workspaceRoot}",
 			"preLaunchTask": null,
 			"runtimeExecutable": null,
@@ -18,7 +18,34 @@
 				"NODE_ENV": "development"
 			},
 			"externalConsole": false,
-			"sourceMaps": false,
+			"sourceMaps": true,
+			"outDir": null
+		},
+		{
+			"name": "CallGraph",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceRoot}/dist/bin/callGraph.js",
+			"stopOnEntry": false,
+			"args": ["/Users/bestra/mh/tahi/client/", 
+			"/Users/bestra/mh/tahi/engines/plos_billing/client/app/",
+			"/Users/bestra/mh/tahi/engines/plos_bio_tech_check/client/app/",
+			"/Users/bestra/mh/tahi/engines/tahi_standard_tasks/client/app/",
+			"/Users/bestra/mh/tahi/engines/plos_bio_internal_review/client/app/",
+			"/Users/bestra/mh/tahi/engines/tahi-assign_team/client/app/",
+			"/Users/bestra/mh/tahi/engines/tahi_upload_manuscript/client/app/"
+			],
+			"cwd": "${workspaceRoot}",
+			"preLaunchTask": null,
+			"runtimeExecutable": null,
+			"runtimeArgs": [
+				"--nolazy"
+			],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"externalConsole": false,
+			"sourceMaps": true,
 			"outDir": null
 		},
 		{

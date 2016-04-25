@@ -1,7 +1,6 @@
 import * as Koa from 'koa'
 import * as Router from "koa-router";
 import * as path from 'path';
-import * as fs from 'fs';
 
 import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
@@ -9,15 +8,14 @@ import * as registry from '../util/registry'
 import { Template } from '../hbs';
 
 import { ok } from 'assert'
+
+import init from './startApp'
+
 export default function start(appPath: string, enginePaths: string[]) {
-    ok(path.isAbsolute(appPath), "app root must be an absolute path");
-    resolver.setRootPath(appPath);
-    let appDir = path.join(appPath, resolver.appRootName);
     let app = new Koa();
     let router = new Router();
     
-    let mods = registry.registerAppModules();
-    enginePaths.forEach(p => registry.registerModules(p, "pods"));
+    init(appPath, enginePaths);
     router.get('/', function (ctx, next) {
         ctx.body = "Hey";
     });
@@ -34,7 +32,7 @@ export default function start(appPath: string, enginePaths: string[]) {
     router.get('/templates/definition', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
-        let template = new Template(registry.lookupModuleName(fullPath));
+        let template = registry.lookup(registry.lookupModuleName(fullPath)).definition as Template;
         
         let queryPosition = { line: parseInt(ctx.query.line), column: parseInt(ctx.query.column) };
         let defineable = template.parsePosition(queryPosition);
