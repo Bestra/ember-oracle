@@ -35,6 +35,10 @@ export function containsPosition({loc}: htmlBars.ASTNode, {line, column}: htmlBa
         endsWithin(line, column, loc.end);
 }
 
+export function containsNode(parent: htmlBars.ASTNode, child: htmlBars.ASTNode) {
+   return containsPosition(parent, child.loc.start) && containsPosition(parent, child.loc.end);
+}
+
 export function findNodes<T>(ast, type, filterFn: (node: T) => boolean) {
     let found: T[] = [];
     let finder = {};

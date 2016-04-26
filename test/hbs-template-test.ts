@@ -107,6 +107,21 @@ describe('Template', function () {
         assertType(pathResult, 'ComponentInvocation');
         assert.equal(pathResult.pathString, 'my-component')
       })
+      
+      describe('actions', function() {
+        describe('top level actions from the rendering context', function() {
+          describe('created by {{action "foo"}}', function () {
+
+          });
+          describe('created via foo=(action "bar")', function() {
+            
+          });
+        });
+        describe('when the action is unquoted', function() {
+          
+        })
+
+      })
     })
   })
 })

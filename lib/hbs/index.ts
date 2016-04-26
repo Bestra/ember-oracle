@@ -7,6 +7,7 @@ import {findComponent, lookup, fileContents} from '../util/registry'
 import * as _ from 'lodash'
 import {
     containsPosition,
+    containsNode,
     findNodes
 } from './util'
 
@@ -72,14 +73,12 @@ export class Block extends Mustache {
             position: this.astNode.loc.start
         }
     }
-
 }
 
 export class ComponentInvocation extends Block {
     get templateModule() {
         return resolver.componentTemplate(this.pathString);
     }
-
 
     get templateFilePath() {
         let m = lookup(this.templateModule);
@@ -116,6 +115,12 @@ export class ComponentInvocation extends Block {
             filePath: this.templateFilePath,
             position: position
         }
+    }
+}
+
+export class Action extends TemplateMember<htmlBars.Callable> {
+    get definedAt() {
+        return null;
     }
 }
 
@@ -159,6 +164,14 @@ export class BlockParam extends Path {
 function findContainingComponent(template: Template, pathExpr) {
     const hasPath = n => n.astNode.path === pathExpr;
     return _.find(template.components, hasPath)
+}
+
+let nodeContainingPosition = (ast, position, type) => {
+    return _.first(findNodes<any>(
+        ast,
+        type,
+        n => containsPosition(n, position)
+    ));
 }
 
 class NoContext {
@@ -244,19 +257,27 @@ export class Template {
         }
     }
 
+
     parsePosition(position: Position): Defineable {
-        // check in order of likelihood
-        // is it a path?
-        // if it's not, return a NullLocation
-        // if it is, check if it's a blockParam
         console.log("looking up position ", position)
-        let pathExpr = findNodes<htmlBars.PathExpression>(
+        let findContainer = _.partial(nodeContainingPosition, this.astNode, position);
+
+        let pathExpr = findContainer('PathExpression');
+        let stringLiteral = findContainer('StringLiteral');
+        // find mustaches and subexpressions whose path is 'action' and have this
+        // string literal as the first param
+        let isActionExpr = (n) => {
+            return (n.type === "SubExpression" || n.type === "MustacheStatement") &&
+                n.path.original === "action" &&
+                n.params[0] === stringLiteral
+
+        }
+        let action = findNodes<any>(
             this.astNode,
-            'PathExpression',
-            (node) => {
-                return containsPosition(node, position)
-            }
-        )[0];
+            'All',
+            isActionExpr
+        )[0]
+
         if (pathExpr) {
             let component = findContainingComponent(this, pathExpr);
             let foundPath = new Path(this, pathExpr);

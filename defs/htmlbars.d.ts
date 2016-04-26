@@ -10,16 +10,22 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export function enter<T>(node: T): void;
     export function exit<T>(node: T): void;
 
-
     /**
-     * MustacheStatements are anything inside {{}}
+     * Generalized from subexpressions, mustaches, and element
+     * modifiers
      */
-    export interface MustacheStatement {
+    export interface Callable {
+        type: string;
         path: PathExpression;
         params: Param[];
         hash: Hash;
-        escaped: boolean;
         loc: Loc;
+    }
+    /**
+     * MustacheStatements are anything inside {{}}
+     */
+    export interface MustacheStatement extends Callable {
+        escaped: boolean;
     }
     // export function buildMustache(path, params, hash, raw, loc) {
     //   return {
@@ -51,11 +57,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     //   };
     // }
 
-    export interface ElementModifierStatement {
-        path: PathExpression;
-        params: Param[];
-        hash: Hash;
-        loc: Loc;
+    export interface ElementModifierStatement  extends Callable {
     }
     // export function buildElementModifier(path, params, hash, loc) {
     //   return {
@@ -185,13 +187,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
     // Expressions
 
-    export interface SubExpression {
-        path: PathExpression;
-        params: Param[];
-        hash: Hash;
-        loc: Loc;
-
-    }
+    export interface SubExpression extends Callable {}
 
     // export function buildSexpr(path, params, hash) {
     //   return {
