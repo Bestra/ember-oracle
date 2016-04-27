@@ -60,6 +60,10 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
     }
 }
 
+export class Partial extends Mustache {
+
+}
+
 export class Block extends Mustache {
     astNode: htmlBars.BlockStatement;
 
@@ -118,10 +122,30 @@ export class ComponentInvocation extends Block {
     }
 }
 
+/**
+ * For now this only accounts for actions defined by
+ * string literals, not bound paths
+ */
 export class Action extends TemplateMember<htmlBars.Callable> {
     get definedAt() {
-        return null;
+        let contextModule = resolver.templateContext(
+            this.containingTemplate.moduleName
+        )
+
+        let context = lookup(contextModule).definition as ember.EmberClass
+        let position = context.actions[this.name].position
+
+        return {
+            filePath: lookup(contextModule).filePath,
+            position: position
+        }
     }
+
+    get name() {
+        let name = this.astNode.params[0] as htmlBars.StringLiteral;
+        return name.original;
+    }
+
 }
 
 export class Path extends TemplateMember<htmlBars.PathExpression> {
@@ -267,18 +291,25 @@ export class Template {
         // find mustaches and subexpressions whose path is 'action' and have this
         // string literal as the first param
         let isActionExpr = (n) => {
-            return (n.type === "SubExpression" || n.type === "MustacheStatement") &&
-                n.path.original === "action" &&
-                n.params[0] === stringLiteral
+
+            if (n.type === "SubExpression" ||
+                n.type === "MustacheStatement" ||
+                n.type === "ElementModifierStatement") {
+                return n.path.original === "action" &&
+                    n.params[0] === stringLiteral
+            } else {
+                return false;
+            }
 
         }
-        let action = findNodes<any>(
+        let actionExpr = findNodes<any>(
             this.astNode,
             'All',
             isActionExpr
         )[0]
-
-        if (pathExpr) {
+        if (actionExpr) {
+            return new Action(this, actionExpr);
+        } else if (pathExpr) {
             let component = findContainingComponent(this, pathExpr);
             let foundPath = new Path(this, pathExpr);
             return this.blockParamFromPath(foundPath) || component || foundPath;

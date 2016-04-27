@@ -28,6 +28,7 @@ function endsWithin(line, column, container: htmlBars.Position) {
 }
 
 export function containsPosition({loc}: htmlBars.ASTNode, {line, column}: htmlBars.Position) {
+    if (!loc) { return false; }
     const pp = (l) => {
         return `${l.start.line}:${l.start.column} - ${l.end.line}:${l.end.column}`
     } 

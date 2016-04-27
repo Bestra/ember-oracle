@@ -6,10 +6,10 @@ afterEach(function () {
 })
 
 describe('Template', function () {
-  let registry, subject: hbs.Template;
+  var registry, subject: hbs.Template;
   beforeEach(function () {
     registry = td.replace('../lib/util/registry');
-    let { Template } = require('../lib/hbs');
+    var { Template } = require('../lib/hbs');
     subject = new Template("template:foo");
   })
   describe('template src is available in the registry', function () {
@@ -65,8 +65,8 @@ describe('Template', function () {
       let assertType = (obj, expected) => {
         let actualType = Object.getPrototypeOf(obj).constructor.name
         assert.equal(actualType,
-        expected,
-        `expected ${actualType} to be of type ${expected}`);
+          expected,
+          `expected ${actualType} to be of type ${expected}`);
       }
       it('returns a plain path from anywhere in the path', function () {
         td.when(registry.fileContents("template:foo"))
@@ -97,30 +97,38 @@ describe('Template', function () {
       })
       it(`returns the containing component if the search hits the mustache path
       and the component is defined`, function () {
-        td.when(registry.fileContents("template:foo"))
-          .thenReturn(
-          `{{#my-component things as |foo|}}{{foo.bar.baz}}{{/my-component}}`
-          );
-         td.when(registry.findComponent('my-component'))
-          .thenReturn(true);
-        let pathResult = parse<hbs.ComponentInvocation>(1, 5)
-        assertType(pathResult, 'ComponentInvocation');
-        assert.equal(pathResult.pathString, 'my-component')
-      })
-      
-      describe('actions', function() {
-        describe('top level actions from the rendering context', function() {
-          describe('created by {{action "foo"}}', function () {
+          td.when(registry.fileContents("template:foo"))
+            .thenReturn(
+            `{{#my-component things as |foo|}}{{foo.bar.baz}}{{/my-component}}`
+            );
+          td.when(registry.findComponent('my-component'))
+            .thenReturn(true);
+          let pathResult = parse<hbs.ComponentInvocation>(1, 5)
+          assertType(pathResult, 'ComponentInvocation');
+          assert.equal(pathResult.pathString, 'my-component')
+        })
+      describe('actions', function () {
+        describe('top level actions from the rendering context', function () {
+          it('works as an element modifier', function () {
+            td.when(registry.fileContents("template:foo"))
+              .thenReturn(
+              `<div {{action "clicked"}}>Hey</div>`
+              );
+            let pathResult = parse<hbs.Action>(1, 17)
+            assertType(pathResult, 'Action');
+            assert.equal(pathResult.name, 'clicked')
 
           });
-          describe('created via foo=(action "bar")', function() {
-            
+          it('created via foo=(action "bar")', function () {
+            td.when(registry.fileContents("template:foo"))
+              .thenReturn(
+              `{{my-component foo=(action "clicked")}}`
+              );
+            let pathResult = parse<hbs.Action>(1, 31)
+            assertType(pathResult, 'Action');
+            assert.equal(pathResult.name, 'clicked')
           });
         });
-        describe('when the action is unquoted', function() {
-          
-        })
-
       })
     })
   })

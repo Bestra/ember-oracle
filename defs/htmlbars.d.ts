@@ -70,6 +70,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface PartialStatement {
+        type: string;
         name: string;
         params: Param[];
         hash: Hash;
@@ -88,6 +89,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface CommentStatement {
+        type: string;
         value: any;
         loc: Loc;
 
@@ -101,6 +103,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface ConcatStatement {
+        type: string;
         parts: any[];
         loc: Loc;
 
@@ -116,6 +119,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // Nodes
 
     export interface ElementNode {
+        type: string;
         tag: string;
         attributes: AttrNode[];
         modifiers: ElementModifierStatement;
@@ -134,6 +138,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface ComponentNode {
+        type: string;
         tag: string;
         attributes: AttrNode[];
         program: Program;
@@ -158,6 +163,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface AttrNode {
+        type: string;
         name: string;
         value: any;
         loc: Loc;
@@ -173,6 +179,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface TextNode {
+        type: string;
         chars: string;
         loc: Loc;
     }
@@ -199,6 +206,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface PathExpression {
+        type: string;
         original: string;
         parts: string[];
         loc: Loc;
@@ -218,6 +226,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface StringLiteral {
+        type: string;
         value: any;
         original: any;
         loc: Loc;
@@ -233,6 +242,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface BooleanLiteral {
+        type: string;
         value: any;
         original: any;
         loc: Loc;
@@ -248,6 +258,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface NumberLiteral {
+        type: string;
         value: any;
         original: any;
         loc: Loc;
@@ -263,6 +274,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface NullLiteral {
+        type: string;
         value: any;
         original: any;
         loc: Loc;
@@ -277,6 +289,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // }
 
     export interface UndefinedLiteral {
+        type: string;
         value: any;
         original: any;
         loc: Loc;
@@ -294,6 +307,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     // Miscellaneous
 
     export interface Hash {
+        type: string;
         pairs: HashPair[]
         loc: Loc;
 
@@ -308,6 +322,7 @@ declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
 
 
     export interface HashPair {
+        type: string;
         key: string;
         value: Param;
         loc: Loc;
