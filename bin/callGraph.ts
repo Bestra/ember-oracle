@@ -9,15 +9,15 @@ let dir = args[0];
 let engines = args.slice(1) || [];
 
 createModules(dir, engines);
-callGraph.init();
+let {nodes, edges} = callGraph.createGraph();
+console.log(`found ${_.keys(nodes).length} nodes and ${edges.length} edges`);
+// let edges = []
+// _.forEach(callGraph.invocationsByTemplate, (components, templateName) => {
 
-let edges = []
-_.forEach(callGraph.invocationsByTemplate, (components, templateName) => {
+//     _.forEach(components, c => edges.push(`"${templateName}" -> "${c.templateModule}"`))
 
-    _.forEach(components, c => edges.push(`"${templateName}" -> "${c.templateModule}"`))
+// })
+// let uniqueEdges = _.uniq(edges);
 
-})
-let uniqueEdges = _.uniq(edges);
-
-let output = ["digraph {", ...uniqueEdges, "}"].join('\n');
-fs.writeFileSync("./output.dot", output, { encoding: 'utf8' });
+// let output = ["digraph {", ...uniqueEdges, "}"].join('\n');
+// fs.writeFileSync("./output.dot", output, { encoding: 'utf8' });

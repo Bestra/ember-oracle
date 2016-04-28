@@ -88,6 +88,14 @@ export class ComponentInvocation extends Block {
         let m = lookup(this.templateModule);
         return m && m.filePath;
     }
+    
+    get props() {
+        let pairs = _.map(this.astNode.hash.pairs, (p) => {
+            return [p.key, p.value]
+        });
+        return _.fromPairs(pairs);
+    }
+    
 
     get moduleName() {
         return 'component:' + this.pathString;

@@ -1,7 +1,10 @@
 import * as registry from './registry'
+import * as resolver from './resolver'
+
 import * as _ from 'lodash'
 import * as fs from 'fs'
 import { Template, ComponentInvocation } from '../hbs'
+import { EmberClass } from '../ember'
 
 export let invocationsByTemplate = {};
 export let invocationsByComponent = {};
@@ -32,3 +35,100 @@ export function parentTemplates(componentModule: string) {
         .map(p => [p.filePath, p.position.line, p.position.column].join(':'))
         .value();
 }
+
+interface InvocationNode {
+    props;
+    position;
+    from: CallNode;
+    to: CallNode;
+}
+interface CallNode {
+    template: { moduleName; props; actions } // called in the template
+    context: { moduleName; props; actions }
+}
+
+let nodes: { [index: string]: CallNode } = {};
+let edges: InvocationNode[] = [];
+function createNode(templateModule: string) {
+    if (nodes[templateModule]) { return; }
+
+    let contextModule = resolver.templateContext(templateModule);
+
+    let template;
+    let templateDef: Template;
+    if (registry.lookup(templateModule)) {
+        templateDef = registry.lookup(templateModule).definition as Template;
+        template = {
+            moduleName: templateModule,
+            props: templateDef.props,
+            actions: templateDef.actions
+        }
+    } else {
+        template = {
+            moduleName: null,
+            props: {},
+            actions: {}
+        }
+    }
+    let context;
+    if (registry.lookup(contextModule)) {
+        let renderingContext = registry.lookup(contextModule).definition as EmberClass;
+        context = {
+            moduleName: contextModule,
+            props: renderingContext.properties,
+            actions: renderingContext.actions
+        }
+    } else {
+        context = {
+            moduleName: null,
+            props: {},
+            actions: {}
+        }
+    }
+    let node = { template, context }
+    nodes[templateModule] = node;
+    if (templateDef) {
+        let invocations = templateDef.components;
+        invocations.forEach((i) => {
+            let edge = {
+                from: node,
+                to: createNode(i.templateModule),
+                props: i.props,
+                position: null
+            }
+            edges.push(edge);
+        });
+        
+    }
+    return node;
+}
+export function createGraph() {
+    _.forEach(registry.allModules('template'), (val, key) => {
+        createNode("template:" + key);
+    });
+    return { nodes, edges };
+}
+
+/*controller-template.hbs:
+{{top-component 
+    ready=true 
+    opened="yes" 
+    someClosureAction=(action 'yo') 
+    anotherClosureAction=(action 'gabba') }}
+
+/*
+top-component.hbs:
+{{date-picker 
+    foo=bar 
+    stuff=(action 'dude') 
+    hey=someClosureAction 
+    what=attrs.anotherClosureAction}}
+top-component.js:
+  opened: null
+  //ready is undefined
+  bar: "cool"
+  actions: {
+      dude: ()
+  }
+  template -> invocation -> context
+*/
