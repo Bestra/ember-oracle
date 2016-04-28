@@ -50,7 +50,7 @@ interface CallNode {
 let nodes: { [index: string]: CallNode } = {};
 let edges: InvocationNode[] = [];
 function createNode(templateModule: string) {
-    if (nodes[templateModule]) { return; }
+    if (nodes[templateModule]) { return nodes[templateModule]; }
 
     let contextModule = resolver.templateContext(templateModule);
 
@@ -94,7 +94,7 @@ function createNode(templateModule: string) {
                 from: node,
                 to: createNode(i.templateModule),
                 props: i.props,
-                position: null
+                position: i.astNode.loc.start
             }
             edges.push(edge);
         });
@@ -108,27 +108,3 @@ export function createGraph() {
     });
     return { nodes, edges };
 }
-
-/*controller-template.hbs:
-{{top-component 
-    ready=true 
-    opened="yes" 
-    someClosureAction=(action 'yo') 
-    anotherClosureAction=(action 'gabba') }}
-
-/*
-top-component.hbs:
-{{date-picker 
-    foo=bar 
-    stuff=(action 'dude') 
-    hey=someClosureAction 
-    what=attrs.anotherClosureAction}}
-top-component.js:
-  opened: null
-  //ready is undefined
-  bar: "cool"
-  actions: {
-      dude: ()
-  }
-  template -> invocation -> context
-*/

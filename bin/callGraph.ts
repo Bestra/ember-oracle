@@ -10,14 +10,21 @@ let engines = args.slice(1) || [];
 
 createModules(dir, engines);
 let {nodes, edges} = callGraph.createGraph();
+let graphEdges = []
 console.log(`found ${_.keys(nodes).length} nodes and ${edges.length} edges`);
-// let edges = []
-// _.forEach(callGraph.invocationsByTemplate, (components, templateName) => {
 
-//     _.forEach(components, c => edges.push(`"${templateName}" -> "${c.templateModule}"`))
+_.forEach(edges, (edge) => {
+    console.log(
+    _.get(edge, 'from.template.moduleName'), ' | ', _.get(edge, 'from.context.moduleName')
+    , ' -> ',
+    _.get(edge, 'to.template.moduleName'), ' | ', _.get(edge, 'to.context.moduleName'))
+    if (_.get(edge, 'to.template.moduleName') && _.get(edge, 'from.template.moduleName')) {
+        let label = `[ label ="${Object.keys(edge.props).join(',')}" ]`;
+        graphEdges.push(`"${edge.from.template.moduleName}" -> "${edge.to.template.moduleName}" ${label};`)
+    }
 
-// })
-// let uniqueEdges = _.uniq(edges);
+})
+console.log("createed ", graphEdges.length, "edges")
 
-// let output = ["digraph {", ...uniqueEdges, "}"].join('\n');
-// fs.writeFileSync("./output.dot", output, { encoding: 'utf8' });
+let output = ["digraph {", ...graphEdges, "}"].join('\n');
+fs.writeFileSync("./output.dot", output, { encoding: 'utf8' });

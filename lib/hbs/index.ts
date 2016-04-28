@@ -88,14 +88,14 @@ export class ComponentInvocation extends Block {
         let m = lookup(this.templateModule);
         return m && m.filePath;
     }
-    
+
     get props() {
         let pairs = _.map(this.astNode.hash.pairs, (p) => {
             return [p.key, p.value]
         });
         return _.fromPairs(pairs);
     }
-    
+
 
     get moduleName() {
         return 'component:' + this.pathString;
@@ -222,6 +222,64 @@ export class Template {
 
     constructor(moduleName: string) {
         this.moduleName = moduleName;
+    }
+
+    get props() {
+        let isHelper = (n) => {
+            if (n.type === "SubExpression" ||
+                n.type === "MustacheStatement" ||
+                n.type === "ElementModifierStatement") {
+                return n.params.length > 0 || n.hash.pairs.length > 0
+            } else {
+                return false;
+            }
+        }
+        let helpers = findNodes<htmlBars.Callable>(
+            this.astNode,
+            'All',
+            isHelper
+        )
+        
+        let allPaths = findNodes<htmlBars.PathExpression>(
+            this.astNode,
+            'PathExpression',
+            () => true
+        );
+        
+        let realPaths = _(allPaths)
+        .reject(p => !!findContainingComponent(this, p))
+        .reject(p => !!_.find(helpers, h => h.path === p))
+        .map(p => new Path(this, p))
+        .reject(p => this.blockParamFromPath(p))
+        .value()
+        
+        return realPaths.reduce((accum, p) => {
+           accum[p.root] = p.astNode.original;
+           return accum; 
+        }, {})
+        
+    }
+
+    get actions() {
+        let isActionExpr = (n) => {
+            if (n.type === "SubExpression" ||
+                n.type === "MustacheStatement" ||
+                n.type === "ElementModifierStatement") {
+                return n.path.original === "action" &&
+                    n.params[0].type === "StringLiteral"
+            } else {
+                return false;
+            }
+
+        }
+        return findNodes<any>(
+            this.astNode,
+            'All',
+            isActionExpr
+        ).reduce((accum, node) => {
+            accum[node.params[0].original] = true
+            return accum
+        }, {});
     }
 
     get components() {
