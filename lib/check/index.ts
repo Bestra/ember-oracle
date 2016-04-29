@@ -5,7 +5,7 @@ import * as _ from 'lodash'
  * Null is fine.
  */
 export function undefinedProps(templateModule: string) {
-      let {template, context} = callGraph.nodes[templateModule]
+      let {template, context} = callGraph.gNodes[templateModule]
       
       let templateProps = _.keys(template.props);
       let contextProps = _.keys(context.props);

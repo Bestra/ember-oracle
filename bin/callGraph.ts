@@ -10,6 +10,9 @@ let engines = args.slice(1) || [];
 
 createModules(dir, engines);
 console.log('creating graph')
-let output = callGraph.createDotGraph();
+callGraph.init();
+callGraph.createGraph();
+
+let output = callGraph.createDotGraph('template:components/manuscript-new');
 console.log('done')
 fs.writeFileSync("./output.dot", output, { encoding: 'utf8' });

@@ -56,10 +56,10 @@ export function graphVizEdge(edge: InvocationNode) {
         return `"${edge.from.template.moduleName}" -> "${edge.to.template.moduleName}" ${label};`
     }
 }
-export let nodes: { [index: string]: CallNode } = {};
-export let edges: InvocationNode[] = [];
+export let gNodes: { [index: string]: CallNode } = {};
+export let gEdges: InvocationNode[] = [];
 function createNode(templateModule: string) {
-    if (nodes[templateModule]) { return nodes[templateModule]; }
+    if (gNodes[templateModule]) { return gNodes[templateModule]; }
 
     let contextModule = resolver.templateContext(templateModule);
 
@@ -95,7 +95,7 @@ function createNode(templateModule: string) {
         }
     }
     let node = { template, context }
-    nodes[templateModule] = node;
+    gNodes[templateModule] = node;
     if (templateDef) {
         let invocations = templateDef.components;
         invocations.forEach((i) => {
@@ -105,7 +105,7 @@ function createNode(templateModule: string) {
                 props: i.props,
                 position: i.astNode.loc.start
             }
-            edges.push(edge);
+            gEdges.push(edge);
         });
 
     }
@@ -117,19 +117,30 @@ export function createGraph() {
         createNode("template:" + key);
         process.stderr.write('.')
     });
-    return { nodes, edges };
+    return { gNodes, gEdges };
 }
 
-export function createDotGraph() {
-    let {nodes, edges} = createGraph();
-    let graphNodes = _.values(nodes).map(graphVizNode)
-    let graphEdges = edges.map(graphVizEdge)
+function outputGraph(nodes, edges) {
     let output = [
         "digraph {",
         "node [shape=record];",
-        ...graphNodes,
-        ...graphEdges,
+        ...nodes.map(graphVizNode),
+        ...edges.map(graphVizEdge),
         "}"
     ].join('\n');
-    return output;
+    return output; 
+}
+export function createDotGraph(moduleName: string) {
+    let findParentEdges = (node) => gEdges.filter(e => e.to === node);
+    
+    if (moduleName) {
+        let node = gNodes[moduleName];
+        let parentEdges = findParentEdges(node);
+        let nodes = _.uniq(parentEdges.map(e => e.from)).concat(node);
+        return outputGraph(nodes, parentEdges)
+    } else {
+        let graphNodes = _.values(gNodes);
+        let graphEdges = gEdges;
+        return outputGraph(graphNodes, graphEdges);      
+    }
 }
