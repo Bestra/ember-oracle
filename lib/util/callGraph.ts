@@ -47,7 +47,7 @@ export interface CallNode {
 }
 
 export function graphVizNode(node: CallNode) {
-    return `"${node.template.moduleName}" [label= "{ ${node.template.moduleName} | { ${_.keys(node.context.props).join('\\n')} | ${_.keys(node.template.props).join('\\n')} } }"];`
+    return `"${node.template.moduleName}" [URL="http://localhost:5300/graph.svg?module=${node.template.moduleName}" label= "{ ${node.template.moduleName} | { ${_.keys(node.context.props).join('\\n')} | ${_.keys(node.template.props).join('\\n')} } }"];`
 }
 
 export function graphVizEdge(edge: InvocationNode) {
@@ -130,13 +130,21 @@ function outputGraph(nodes, edges) {
     ].join('\n');
     return output; 
 }
-export function createDotGraph(moduleName: string) {
-    let findParentEdges = (node) => gEdges.filter(e => e.to === node);
-    
+
+export function createDotGraph(moduleName: string, recurse?: boolean) {
+    let findParentEdges = (moduleName: string, found) => {
+        let edges = gEdges.filter(e => e.to.template.moduleName === moduleName);
+        found.push(...edges);
+        edges.forEach(e => { 
+            if (e.from.template.moduleName) { findParentEdges(e.from.template.moduleName, found) }
+        });
+        return found;
+    };
+
     if (moduleName) {
         let node = gNodes[moduleName];
-        let parentEdges = findParentEdges(node);
-        let nodes = _.uniq(parentEdges.map(e => e.from)).concat(node);
+        let parentEdges = findParentEdges(moduleName, []);
+        let nodes = _.uniq(parentEdges.map(e => e.from).concat(parentEdges.map(e => e.to)));
         return outputGraph(nodes, parentEdges)
     } else {
         let graphNodes = _.values(gNodes);
