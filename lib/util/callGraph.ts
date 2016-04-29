@@ -47,6 +47,16 @@ interface CallNode {
     context: { moduleName; props; actions }
 }
 
+export function graphVizNode(node: CallNode) {
+    return `"${node.template.moduleName}" [label= "{ ${node.template.moduleName} | { ${_.keys(node.context.props).join('\\n')} | ${_.keys(node.template.props).join('\\n')} } }"];`
+}
+
+export function graphVizEdge(edge: InvocationNode) {
+    if (_.get(edge, 'to.template.moduleName') && _.get(edge, 'from.template.moduleName')) {
+        let label = `[ label ="${Object.keys(edge.props).join('\\n')}" ]`;
+        return `"${edge.from.template.moduleName}" -> "${edge.to.template.moduleName}" ${label};`
+    }
+}
 let nodes: { [index: string]: CallNode } = {};
 let edges: InvocationNode[] = [];
 function createNode(templateModule: string) {
@@ -98,7 +108,7 @@ function createNode(templateModule: string) {
             }
             edges.push(edge);
         });
-        
+
     }
     return node;
 }
@@ -107,4 +117,18 @@ export function createGraph() {
         createNode("template:" + key);
     });
     return { nodes, edges };
+}
+
+export function createDotGraph() {
+    let {nodes, edges} = createGraph();
+    let graphNodes = _.values(nodes).map(graphVizNode)
+    let graphEdges = edges.map(graphVizEdge)
+    let output = [
+        "digraph {",
+        "node [shape=record];",
+        ...graphNodes,
+        ...graphEdges,
+        "}"
+    ].join('\n');
+    return output;
 }

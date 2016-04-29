@@ -228,7 +228,9 @@ export class Template {
         let isHelper = (n) => {
             if (n.type === "SubExpression" ||
                 n.type === "MustacheStatement" ||
-                n.type === "ElementModifierStatement") {
+                n.type === "ElementModifierStatement" ||
+                n.type === "BlockStatement"
+            ) {
                 return n.params.length > 0 || n.hash.pairs.length > 0
             } else {
                 return false;
@@ -239,25 +241,25 @@ export class Template {
             'All',
             isHelper
         )
-        
+
         let allPaths = findNodes<htmlBars.PathExpression>(
             this.astNode,
             'PathExpression',
             () => true
         );
-        
+
         let realPaths = _(allPaths)
-        .reject(p => !!findContainingComponent(this, p))
-        .reject(p => !!_.find(helpers, h => h.path === p))
-        .map(p => new Path(this, p))
-        .reject(p => this.blockParamFromPath(p))
-        .value()
-        
+            .reject(p => !!findContainingComponent(this, p))
+            .reject(p => !!_.find(helpers, h => h.path === p))
+            .map(p => new Path(this, p))
+            .reject(p => this.blockParamFromPath(p))
+            .value()
+
         return realPaths.reduce((accum, p) => {
-           accum[p.root] = p.astNode.original;
-           return accum; 
+            accum[p.root] = p.astNode.original;
+            return accum;
         }, {})
-        
+
     }
 
     get actions() {
