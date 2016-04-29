@@ -5,7 +5,6 @@ import * as _ from 'lodash'
 import * as fs from 'fs'
 import { Template, ComponentInvocation } from '../hbs'
 import { EmberClass } from '../ember'
-
 export let invocationsByTemplate = {};
 export let invocationsByComponent = {};
 
@@ -36,13 +35,13 @@ export function parentTemplates(componentModule: string) {
         .value();
 }
 
-interface InvocationNode {
+export interface InvocationNode {
     props;
     position;
     from: CallNode;
     to: CallNode;
 }
-interface CallNode {
+export interface CallNode {
     template: { moduleName; props; actions } // called in the template
     context: { moduleName; props; actions }
 }
@@ -57,8 +56,8 @@ export function graphVizEdge(edge: InvocationNode) {
         return `"${edge.from.template.moduleName}" -> "${edge.to.template.moduleName}" ${label};`
     }
 }
-let nodes: { [index: string]: CallNode } = {};
-let edges: InvocationNode[] = [];
+export let nodes: { [index: string]: CallNode } = {};
+export let edges: InvocationNode[] = [];
 function createNode(templateModule: string) {
     if (nodes[templateModule]) { return nodes[templateModule]; }
 
@@ -113,8 +112,10 @@ function createNode(templateModule: string) {
     return node;
 }
 export function createGraph() {
+    let templateCount = _.keys(registry.allModules('template')).length
     _.forEach(registry.allModules('template'), (val, key) => {
         createNode("template:" + key);
+        process.stderr.write('.')
     });
     return { nodes, edges };
 }

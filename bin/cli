@@ -19,4 +19,9 @@ case "$1" in
       --data-urlencode "path=$2" \
       --data-urlencode "format=compact"
     ;;
+  checkTemplate)
+    curl -s -G "localhost:5300/templates/check" \
+      --data-urlencode "path=$2" \
+      --data-urlencode "format=compact"
+    ;;
 esac

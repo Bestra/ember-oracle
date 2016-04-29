@@ -247,16 +247,22 @@ export class Template {
             'PathExpression',
             () => true
         );
-
+        let SPECIAL_PATH_NAMES = [
+            "yield",
+            "outlet"
+        ]
         let realPaths = _(allPaths)
             .reject(p => !!findContainingComponent(this, p))
             .reject(p => !!_.find(helpers, h => h.path === p))
+            .reject(p => _.includes(SPECIAL_PATH_NAMES, p.original))
             .map(p => new Path(this, p))
             .reject(p => this.blockParamFromPath(p))
             .value()
 
         return realPaths.reduce((accum, p) => {
-            accum[p.root] = p.astNode.original;
+            if (!accum[p.root]) { accum[p.root] = []; }
+            
+            accum[p.root].push(p.astNode.original);
             return accum;
         }, {})
 

@@ -6,6 +6,7 @@ import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
 import * as callGraph from '../util/callGraph'
 import * as _ from 'lodash'
+import * as check from '../check'
 
 import { Template } from '../hbs';
 
@@ -13,12 +14,15 @@ import { ok } from 'assert'
 
 import init from './startApp'
 
+let lookupFile = _.flow(path.resolve, registry.lookupModuleName);
+
 export default function start(appPath: string, enginePaths: string[]) {
     let app = new Koa();
     let router = new Router();
     
     init(appPath, enginePaths);
     callGraph.init();
+    callGraph.createGraph();
     router.get('/', function (ctx, next) {
         ctx.body = "Hey";
     });
@@ -57,6 +61,17 @@ export default function start(appPath: string, enginePaths: string[]) {
             ctx.body = parents.join('\n');
         } else {
             ctx.body = JSON.stringify(parents);
+        }
+    });
+    router.get('/templates/check', function (ctx, next) {
+        console.log(ctx.query);
+        let fullPath = path.resolve(ctx.query.path);
+        let templateModule = registry.lookupModuleName(fullPath);
+        let undefinedProps = check.undefinedProps(templateModule);
+        if (ctx.query.format === "compact") {
+            ctx.body = undefinedProps.join(',');
+        } else {
+            ctx.body = JSON.stringify(undefinedProps);
         }
     });
 

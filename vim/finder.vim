@@ -39,6 +39,15 @@ function! EmberParents()
 
 endfunction
 
+function! EmberCheckTemplate()
+  let command_path = "sh ~/ember-analyzer/bin/cli"
+  let current_file = expand('%:p')
+  let full_command = join([command_path, "checkTemplate", current_file], " ")
+  cgete system(full_command)
+  cope
+
+endfunction
+
 nnoremap <leader>fd :call EmberDef()<cr>
 nnoremap <leader>fa :call EmberAlternate()<cr>
 nnoremap <leader>fp :call EmberParents()<cr>
