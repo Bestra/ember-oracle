@@ -6,7 +6,8 @@ import * as assert from 'assert'
 
 export let podPrefix = "pods";
 export let appRootName = "app";
-export let rootPath = ""; // this will need to allow for engines later
+export let appName = "app" // this is renamed based on the app name in the ember project's cli config
+export let rootPath = ""; // set by the server
 
 function singularize(str: string) {
     return str.slice(0, str.length - 1);
@@ -18,6 +19,16 @@ export function fullAppPath() {
 
 export function fullPodPath() {
     return path.join(rootPath, appRootName, podPrefix);
+}
+
+/**
+ * Translates a path like 'my-app/mixins/models/foo' to a real path in the file system.
+ * For now this will won't pick up engine paths
+ */
+export function filePathFromAppPath(inPath: string) {
+    let parts = inPath.split('/')
+    parts[0] = 'app';
+    return path.join(rootPath, parts.join('/') + '.js');
 }
 
 // Note that all paths should be relative starting with appRootName

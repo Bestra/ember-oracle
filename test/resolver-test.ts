@@ -16,6 +16,7 @@ describe("the resolver", function () {
             assertModule(rootPath + "app/pods/components/foo/bar-baz/template.hbs", rootPath, "template:components/foo/bar-baz");
             assertModule(rootPath + "app/pods/components/foo/bar-baz/component.js", rootPath, "component:foo/bar-baz");
         });
+        
         it('turns non-pod paths starting with app/ into module names', function () {
             assertModule(rootPath + "app/controllers/foo/bar.js", rootPath + "app/", "controller:foo/bar");
             assertModule(rootPath + "app/routes/foo/bar.js", rootPath + "app/", "route:foo/bar");
@@ -24,4 +25,15 @@ describe("the resolver", function () {
             assertModule(rootPath + "app/components/foo/bar-baz.js", rootPath + "app/", "component:foo/bar-baz");
         });
     });
+    
+    describe('filePathFromAppPath', function() {
+      beforeEach(function () {
+          resolver.setRootPath("/some/path/");
+          resolver.appName = "testApp";
+      })
+      
+      it('translates app paths into absolute paths', function() {
+        assert.equal(resolver.filePathFromAppPath('testApp/mixins/foo'), '/some/path/app/mixins/foo.js');
+      })
+    })
 });

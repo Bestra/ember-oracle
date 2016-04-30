@@ -78,10 +78,17 @@ class Action extends Property {
 
 export default class EmberClass {
     moduleName: string;
-
+    superClass: EmberClass;
+    mixins: EmberClass[];
+    
+    _ast: any;
     get ast() {
+        if (this._ast) { return this._ast; }
+        
+        console.log(require('testdouble').explain(fileContents));
         let src = fileContents(this.moduleName);
-        return recast.parse(src, { esprima: babel });
+        this._ast = recast.parse(src, { esprima: babel });
+        return this._ast;
     }
     
     get properties() {

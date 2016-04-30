@@ -36,7 +36,8 @@ let registry: Dict<RegistryType> = {
     service: {},
     template: {},
     route: {},
-    view: {}
+    view: {},
+    imports: {} //catch-all
 };
 
 let registeredFiles: Dict<string> = {};
@@ -65,6 +66,10 @@ export function registerPath(filePath: string, appRoot: string) {
 export function registerAppModules() {
     let appPath = resolver.fullAppPath();
     return registerModules(resolver.fullAppPath() + "/", resolver.podPrefix)
+}
+
+export function registerManually(moduleName, filePath) {
+    registry['imports'][moduleName] = { filePath, definition: new EmberClass(moduleName) }
 }
 
 export function registerModules(rootPath, podPrefix) {
