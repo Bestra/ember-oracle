@@ -20,6 +20,7 @@ function extractProps(ast) {
             let args = node.declaration.arguments;
             if (args && args.length) {
                 let directProps: AST.Property[] = args[args.length - 1].properties;
+            console.log("extracting direct props from ", directProps);
                 directProps.filter((p) => {
                     return p.value.type !== "FunctionExpression" &&
                         p.key.name !== "actions";
@@ -32,26 +33,26 @@ function extractProps(ast) {
             this.traverse(path);
         }
     })
-    
+
     return propList;
 }
 
 function extractActions(ast) {
     let propList: Dict<Action> = {};
-    
+
     recast.visit(ast, {
         visitExportDefaultDeclaration: function (path) {
             let node = path.node;
             let args = node.declaration.arguments;
             if (args && args.length) {
                 let directProps = args[args.length - 1].properties;
-                let actionsHash: any = _.find(directProps, {key: {name: "actions"}});
+                let actionsHash: any = _.find(directProps, { key: { name: "actions" } });
                 if (actionsHash) {
-                   actionsHash.value.properties.forEach((p) => {
-                       let a = new Action(p);
-                       propList[a.name] = a;
-                   }) 
-                } 
+                    actionsHash.value.properties.forEach((p) => {
+                        let a = new Action(p);
+                        propList[a.name] = a;
+                    })
+                }
             }
 
             this.traverse(path);
@@ -80,27 +81,26 @@ export default class EmberClass {
     moduleName: string;
     superClass: EmberClass;
     mixins: EmberClass[];
-    
+
     _ast: any;
     get ast() {
         if (this._ast) { return this._ast; }
-        
-        console.log(require('testdouble').explain(fileContents));
+
         let src = fileContents(this.moduleName);
         this._ast = recast.parse(src, { esprima: babel });
         return this._ast;
     }
-    
+
     get properties() {
         return extractProps(this.ast)
     }
-    
+
     get actions() {
         return extractActions(this.ast);
     }
-    
+
     constructor(moduleName) {
-        this.moduleName = moduleName;        
+        this.moduleName = moduleName;
     }
 
 }
