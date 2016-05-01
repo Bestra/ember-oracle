@@ -12,54 +12,45 @@ interface Dict<T> {
     [index: string]: T
 }
 
-function extractProps(ast) {
-    let propList: Dict<Property> = {};
+function defaultExportProps(ast) {
+    let directProps: AST.Property[];
     recast.visit(ast, {
-        visitExportDefaultDeclaration: function (path) {
-            let node = path.node;
-            let args = node.declaration.arguments;
+        visitExportDefaultDeclaration: function ({node: {declaration}}) {
+            let args = declaration.arguments;
+            console.log(args)
             if (args && args.length) {
-                let directProps: AST.Property[] = args[args.length - 1].properties;
-            console.log("extracting direct props from ", directProps);
-                directProps.filter((p) => {
-                    return p.value.type !== "FunctionExpression" &&
-                        p.key.name !== "actions";
-                }).forEach((k) => {
-                    let p = new Property(k);
-                    propList[p.name] = p;
-                })
+                directProps = _.last<any>(args).properties;
             }
-
-            this.traverse(path);
+            return false;
         }
     })
+    return directProps;
+}
 
-    return propList;
+function extractProps(ast) {
+    let dict: Dict<Property> = {};
+
+    defaultExportProps(ast).filter(({value, key}) => {
+        return value.type !== "FunctionExpression" &&
+            key.name !== "actions";
+    }).forEach((k) => {
+        let newProp = new Property(k);
+        dict[newProp.name] = newProp;
+    })
+
+    return dict;
 }
 
 function extractActions(ast) {
-    let propList: Dict<Action> = {};
-
-    recast.visit(ast, {
-        visitExportDefaultDeclaration: function (path) {
-            let node = path.node;
-            let args = node.declaration.arguments;
-            if (args && args.length) {
-                let directProps = args[args.length - 1].properties;
-                let actionsHash: any = _.find(directProps, { key: { name: "actions" } });
-                if (actionsHash) {
-                    actionsHash.value.properties.forEach((p) => {
-                        let a = new Action(p);
-                        propList[a.name] = a;
-                    })
-                }
-            }
-
-            this.traverse(path);
-        }
-    })
-
-    return propList;
+    let dict: Dict<Action> = {};
+    let actionsHash: any = _.find(defaultExportProps(ast), { key: { name: "actions" } });
+    if (actionsHash) {
+        actionsHash.value.properties.forEach((p) => {
+            let a = new Action(p);
+            dict[a.name] = a;
+        })
+        return dict;
+    }
 }
 
 class Property {
@@ -79,8 +70,13 @@ class Action extends Property {
 
 export default class EmberClass {
     moduleName: string;
-    superClass: EmberClass;
-    mixins: EmberClass[];
+    
+    get superClass(): EmberClass {
+        return null;
+    }
+    get mixins(): EmberClass[] {
+        return []
+    }
 
     _ast: any;
     get ast() {
