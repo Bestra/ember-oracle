@@ -6,6 +6,7 @@ import * as childProcess from 'child_process';
 import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
 import * as callGraph from '../util/callGraph'
+import parser from '../util/parser';
 import * as _ from 'lodash'
 import * as check from '../check'
 
@@ -93,6 +94,11 @@ export default function start(appPath: string, enginePaths: string[]) {
         ctx.type = "image/svg+xml"
 
     });
+
+    router.get('/ast', function (ctx, next) {
+        let fullPath = path.resolve(ctx.query.path);
+        ctx.body = parser(fullPath);
+    })
 
     app.use(router.routes())
         .use(router.allowedMethods());
