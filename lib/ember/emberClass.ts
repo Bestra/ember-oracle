@@ -53,6 +53,7 @@ function extractActions(ast) {
     }
 }
 
+
 class Property {
     position: Position
     name: string;
@@ -68,11 +69,54 @@ class Action extends Property {
 
 }
 
+
+function importForIdentifier(programAst, identifierNode) {
+
+}
+
+function moduleFromImport() {
+
+}
+
+function memberExpressions(node: any) {
+    let members = [];
+    let _findMembers = (node) => {
+        console.log(`node.object: ${node.object.name}`)
+        console.log(`node.property: ${node.property.name}`)
+        if (node.object) {
+            members.push(node.object);
+
+        }
+        if (node.object.object) {
+            _findMembers(node.object)
+        }
+        if (node.property) {
+
+            members.push(node.property)
+        }
+
+    }
+    _findMembers(node);
+    return members.map(n => n.name);
+}
+
+function superClassIdentifiers(ast) {
+    let names;
+    recast.visit(ast, {
+        visitExportDefaultDeclaration: function ({node: {declaration}}) {
+            let typeExpr = declaration.callee.object
+            names = memberExpressions(typeExpr)
+            return false;
+        }
+    })
+    return names;
+}
+
 export default class EmberClass {
     moduleName: string;
-    
+
     get superClass(): EmberClass {
-        return null;
+        return superClassIdentifiers(this.ast);
     }
     get mixins(): EmberClass[] {
         return []
