@@ -13,7 +13,7 @@ interface Dict<T> {
 }
 
 function defaultExportProps(ast) {
-    let directProps: AST.Property[];
+    let directProps: AST.Property[] = [];
     recast.visit(ast, {
         visitExportDefaultDeclaration: function ({node: {declaration}}) {
             let args = declaration.arguments;
