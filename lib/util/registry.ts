@@ -11,6 +11,7 @@ import * as util from 'util';
 import { readFileSync } from 'fs';
 import { EmberClass } from '../ember';
 import { Template } from '../hbs'
+import * as assert from 'assert';
 
 let SUPPORTED_MODULES = {
     'component': '.js',
@@ -107,8 +108,19 @@ export function lookup(moduleName: string) {
     return registry[moduleType][modulePath];
 }
 
+export function lookupByAppPath(appPath) {
+    return lookup(lookupModuleNameForAppPath(appPath))
+}
+
 export function lookupModuleName(filePath) {
+    let r = registeredFiles[filePath];
+    assert.ok(r, `File not found at ${filePath}`);
     return registeredFiles[filePath];
+};
+
+export function lookupModuleNameForAppPath(appFilePath) {
+    let filePath = resolver.filePathFromAppPath(appFilePath);
+    return lookupModuleName(filePath);
 };
 /**
  * Given a name like foo/my-component

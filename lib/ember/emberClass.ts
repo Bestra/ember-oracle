@@ -5,7 +5,7 @@ import * as _ from 'lodash'
 
 let babel = require('babel-core');
 import * as AST from '../ember/ast'
-import {lookup, fileContents} from '../util/registry'
+import { lookup, fileContents, lookupByAppPath } from '../util/registry'
 type Position = { line: number; column: number }
 type Prop = { [index: string]: Position }
 interface Dict<T> {
@@ -17,7 +17,6 @@ function defaultExportProps(ast) {
     recast.visit(ast, {
         visitExportDefaultDeclaration: function ({node: {declaration}}) {
             let args = declaration.arguments;
-            console.log(args)
             if (args && args.length) {
                 directProps = _.last<any>(args).properties;
             }
@@ -53,7 +52,6 @@ function extractActions(ast) {
     }
 }
 
-
 class Property {
     position: Position
     name: string;
@@ -69,54 +67,71 @@ class Action extends Property {
 
 }
 
-
-function importForIdentifier(programAst, identifierNode) {
-
-}
-
-function moduleFromImport() {
-
-}
-
-function memberExpressions(node: any) {
-    let members = [];
-    let _findMembers = (node) => {
-        console.log(`node.object: ${node.object.name}`)
-        console.log(`node.property: ${node.property.name}`)
-        if (node.object) {
-            members.push(node.object);
-
+function rootIdentifier(memberExpr: any) {
+    let findRoot = (aNode) => {
+        if (aNode.type === "Identifier") {
+            return aNode.name;
+        } else if (aNode.object.type === "MemberExpression") {
+            return findRoot(aNode.object);
+        } else {
+            return null;
         }
-        if (node.object.object) {
-            _findMembers(node.object)
-        }
-        if (node.property) {
-
-            members.push(node.property)
-        }
-
     }
-    _findMembers(node);
-    return members.map(n => n.name);
+    return findRoot(memberExpr);
 }
 
-function superClassIdentifiers(ast) {
-    let names;
+function superClassIdentifier(ast) {
+    let name: string;
     recast.visit(ast, {
         visitExportDefaultDeclaration: function ({node: {declaration}}) {
-            let typeExpr = declaration.callee.object
-            names = memberExpressions(typeExpr)
+            if (declaration.callee) {
+                let typeExpr = declaration.callee.object
+                name = rootIdentifier(typeExpr)
+            } else {
+                name = null;
+            }
             return false;
         }
     })
-    return names;
+    return name;
 }
+
+function superClass(ast) {
+    let name = superClassIdentifier(ast);
+    let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View']
+    if (_.indexOf(emberNames, name) > -1 || !name ) {
+        return new EmptyEmberClass("component:ember"); //TODO make this a null object
+    }
+    console.log("superclass name is ", name)
+    let importPath = null;
+    recast.visit(ast, {
+        //for some reason the nodePath here conforms to a different spec than the other
+        //paths, hence the funny business
+        visitImportDefaultSpecifier: function (path) {
+            if (path.value.local.type === "Identifier" && path.value.local.name === name) {
+                importPath = path.parentPath.node.source.value;
+            } 
+            return false;
+        }
+    });
+ 
+    let sc = lookupByAppPath(importPath).definition;
+    console.log("superclass found: ", sc)
+    return sc;
+
+}
+
+function emptyDict<T>(): Dict<T> {
+    return {};
+}
+
+
 
 export default class EmberClass {
     moduleName: string;
 
     get superClass(): EmberClass {
-        return superClassIdentifiers(this.ast);
+        return superClass(this.ast);
     }
     get mixins(): EmberClass[] {
         return []
@@ -132,7 +147,10 @@ export default class EmberClass {
     }
 
     get properties() {
-        return extractProps(this.ast)
+        let superProps = this.superClass.properties;
+        console.log("super props are ", _.keys(superProps))
+        let localProps = extractProps(this.ast);
+        return _.assign({}, superProps, localProps);
     }
 
     get actions() {
@@ -143,4 +161,23 @@ export default class EmberClass {
         this.moduleName = moduleName;
     }
 
+
+}
+
+export class EmptyEmberClass extends EmberClass {
+    get superClass() {
+        return null;
+    }
+
+    get mixins() {
+        return [];
+    }
+
+    get properties() {
+        return emptyDict<Property>();
+    }
+
+    get actions() {
+        return emptyDict<Action>();
+    }
 }

@@ -323,7 +323,6 @@ export class Template {
     _astNode: htmlBars.Program;
     get astNode() {
         if (this._astNode) { return this._astNode }
-        console.log(require('testdouble').explain(fileContents));
         let src = fileContents(this.moduleName);
         this._astNode = htmlBars.parse(src);
         return this._astNode;
