@@ -26,6 +26,7 @@ function defaultExportProps(ast) {
     return directProps;
 }
 
+
 function extractProps(ast, filePath) {
     let dict: Dict<Property> = {};
 
@@ -99,13 +100,7 @@ function superClassIdentifier(ast) {
     return name;
 }
 
-function superClass(ast) {
-    let name = superClassIdentifier(ast);
-    let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View']
-    if (_.indexOf(emberNames, name) > -1 || !name ) {
-        return new EmptyEmberClass("component:ember"); //TODO make this a null object
-    }
-    console.log("superclass name is ", name)
+function findImportPathForIdentifier(ast, name: string): string {
     let importPath = null;
     recast.visit(ast, {
         //for some reason the nodePath here conforms to a different spec than the other
@@ -113,20 +108,66 @@ function superClass(ast) {
         visitImportDefaultSpecifier: function (path) {
             if (path.value.local.type === "Identifier" && path.value.local.name === name) {
                 importPath = path.parentPath.node.source.value;
-            } 
+            }
             return false;
         }
     });
+    return importPath;
+}
+
+function extractMixins(ast): EmberClass[] {
+    let mixinArgs: any[];
+
+    recast.visit(ast, {
+        visitExportDefaultDeclaration: function ({node: {declaration}}) {
+            let args: any[] = declaration.arguments;
+            if (args && args.length > 1) {
+                mixinArgs = args.slice(0, -1);
+            } else {
+                mixinArgs = [];
+            }
+            return false;
+        }
+    })
+
+    let mixins = _(mixinArgs)
+        .filter({ type: "Identifier" })
+        .map<string>('name')
+        .map(name => findImportPathForIdentifier(ast, name))
+        .map((aPath) => {
+            if (!aPath) {
+                console.log("Unable to find import path for ", name);
+                return new EmptyEmberClass("component:ember");
+            }
+            console.log("looking up ", aPath)
+            let m: EmberClass = lookupByAppPath(aPath).definition;
+            console.log("mixin found: ", m)
+            return m;
+        }).value()
+
+    return mixins;
+
+}
+
+function extractSuperClass(ast): EmberClass {
+    let name = superClassIdentifier(ast);
+    let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View']
+    if (_.indexOf(emberNames, name) > -1 || !name) {
+        return new EmptyEmberClass("component:ember"); //TODO make this a null object
+    }
+    console.log("superclass name is ", name)
+    let importPath = findImportPathForIdentifier(ast, name);
 
     if (!importPath) {
         console.log("Unable to find import path for ", name);
         return new EmptyEmberClass("component:ember");
-    } 
+    }
     let sc = lookupByAppPath(importPath).definition;
     console.log("superclass found: ", sc)
     return sc;
 
 }
+
 
 function emptyDict<T>(): Dict<T> {
     return {};
@@ -137,12 +178,12 @@ export default class EmberClass {
     moduleName: string;
 
     get superClass(): EmberClass {
-        return superClass(this.ast);
+        return extractSuperClass(this.ast);
     }
     get mixins(): EmberClass[] {
-        return []
+        return extractMixins(this.ast);
     }
-    
+
     get filePath() {
         return lookup(this.moduleName).filePath;
     }
@@ -158,16 +199,19 @@ export default class EmberClass {
 
     get properties() {
         let superProps = this.superClass.properties;
+        let mixinProps = this.mixins.map(m => m.properties);
         console.log("super props are ", _.keys(superProps))
         let localProps = extractProps(this.ast, this.filePath);
-        return _.assign({}, superProps, localProps);
+        return _.assign({}, superProps, ...mixinProps, localProps);
     }
 
     get actions() {
         let superActions = this.superClass.actions;
+        let mixinActions = this.mixins.map(m => m.actions);
+
         console.log("super actions are ", _.keys(superActions))
         let localActions = extractActions(this.ast, this.filePath);
-        return _.assign({}, superActions, localActions);
+        return _.assign({}, superActions, ...mixinActions, localActions);
     }
 
     constructor(moduleName) {

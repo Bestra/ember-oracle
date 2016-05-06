@@ -20,7 +20,8 @@ let SUPPORTED_MODULES = {
     'service': '.js',
     'template': '.hbs',
     'route': '.js',
-    'view:': '.js'
+    'view:': '.js',
+    'mixin': '.js'
 };
 
 interface Dict<T> {
@@ -38,7 +39,7 @@ let registry: Dict<RegistryType> = {
     template: {},
     route: {},
     view: {},
-    imports: {} //catch-all
+    mixin: {}
 };
 
 let registeredFiles: Dict<string> = {};
@@ -97,16 +98,19 @@ export function registerModules(rootPath, podPrefix) {
 }
 
 
-
 /**
  * Only retrieve items from the registry by module name
  */
 export function lookup(moduleName: string) {
     let [moduleType, modulePath] = moduleName.split(':');
+    let modules = registry[moduleType];
+    assert.ok(modules, "modules should exist");
+    
     return registry[moduleType][modulePath];
 }
 
 export function lookupByAppPath(appPath) {
+    console.log("looking up app path ", appPath);
     return lookup(resolver.moduleNameFromAppPath(appPath))
 }
 
