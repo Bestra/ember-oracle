@@ -31,6 +31,10 @@ export function filePathFromAppPath(inPath: string) {
     return path.join(rootPath, parts.join('/') + '.js');
 }
 
+export function moduleNameFromAppPath(inPath: string) {
+    return moduleNameFromPath(filePathFromAppPath(inPath), rootPath);
+}
+
 // Note that all paths should be relative starting with appRootName
 export function moduleNameFromPath(absoluteFilePath: string, rootPath: string): string {
     let filePath = absoluteFilePath.split(rootPath)[1];
@@ -48,7 +52,10 @@ export function moduleNameFromPath(absoluteFilePath: string, rootPath: string): 
 
     } else {
         //assuming segments like 'app/routes/foo/bar.js'
-        let parts = filePath.split(/[\/\.]/);
+        var parts = filePath.split(/[\/\.]/);
+        if (parts[0] === 'app') {
+            parts = parts.slice(1);
+        }
         let prefix = singularize(parts[0]);
         let modulePath = parts.slice(1, -1);
 

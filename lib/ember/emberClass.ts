@@ -26,26 +26,26 @@ function defaultExportProps(ast) {
     return directProps;
 }
 
-function extractProps(ast) {
+function extractProps(ast, filePath) {
     let dict: Dict<Property> = {};
 
     defaultExportProps(ast).filter(({value, key}) => {
         return value.type !== "FunctionExpression" &&
             key.name !== "actions";
     }).forEach((k) => {
-        let newProp = new Property(k);
+        let newProp = new Property(k, filePath);
         dict[newProp.name] = newProp;
     })
 
     return dict;
 }
 
-function extractActions(ast) {
+function extractActions(ast, filePath) {
     let dict: Dict<Action> = {};
     let actionsHash: any = _.find(defaultExportProps(ast), { key: { name: "actions" } });
     if (actionsHash) {
         actionsHash.value.properties.forEach((p) => {
-            let a = new Action(p);
+            let a = new Action(p, filePath);
             dict[a.name] = a;
         })
         return dict;
@@ -53,13 +53,16 @@ function extractActions(ast) {
 }
 
 class Property {
+    parentClass: EmberClass;
     position: Position
     name: string;
+    filePath: string;
 
-    constructor(astNode) {
+    constructor(astNode, filePath) {
         let {loc: {start: {line, column}}, key: {name}} = astNode;
         this.name = name;
-        this.position = { line, column }
+        this.position = { line, column };
+        this.filePath = filePath;
     }
 }
 
@@ -114,7 +117,11 @@ function superClass(ast) {
             return false;
         }
     });
- 
+
+    if (!importPath) {
+        console.log("Unable to find import path for ", name);
+        return new EmptyEmberClass("component:ember");
+    } 
     let sc = lookupByAppPath(importPath).definition;
     console.log("superclass found: ", sc)
     return sc;
@@ -126,7 +133,6 @@ function emptyDict<T>(): Dict<T> {
 }
 
 
-
 export default class EmberClass {
     moduleName: string;
 
@@ -135,6 +141,10 @@ export default class EmberClass {
     }
     get mixins(): EmberClass[] {
         return []
+    }
+    
+    get filePath() {
+        return lookup(this.moduleName).filePath;
     }
 
     _ast: any;
@@ -149,12 +159,15 @@ export default class EmberClass {
     get properties() {
         let superProps = this.superClass.properties;
         console.log("super props are ", _.keys(superProps))
-        let localProps = extractProps(this.ast);
+        let localProps = extractProps(this.ast, this.filePath);
         return _.assign({}, superProps, localProps);
     }
 
     get actions() {
-        return extractActions(this.ast);
+        let superActions = this.superClass.actions;
+        console.log("super actions are ", _.keys(superActions))
+        let localActions = extractActions(this.ast, this.filePath);
+        return _.assign({}, superActions, localActions);
     }
 
     constructor(moduleName) {

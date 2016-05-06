@@ -102,14 +102,12 @@ export function registerModules(rootPath, podPrefix) {
  * Only retrieve items from the registry by module name
  */
 export function lookup(moduleName: string) {
-
-    let moduleType = moduleName.split(':')[0];
-    let modulePath = moduleName.split(':')[1];
+    let [moduleType, modulePath] = moduleName.split(':');
     return registry[moduleType][modulePath];
 }
 
 export function lookupByAppPath(appPath) {
-    return lookup(lookupModuleNameForAppPath(appPath))
+    return lookup(resolver.moduleNameFromAppPath(appPath))
 }
 
 export function lookupModuleName(filePath) {
@@ -118,10 +116,6 @@ export function lookupModuleName(filePath) {
     return registeredFiles[filePath];
 };
 
-export function lookupModuleNameForAppPath(appFilePath) {
-    let filePath = resolver.filePathFromAppPath(appFilePath);
-    return lookupModuleName(filePath);
-};
 /**
  * Given a name like foo/my-component
  */

@@ -141,11 +141,11 @@ export class Action extends TemplateMember<htmlBars.Callable> {
         )
 
         let context = lookup(contextModule).definition as ember.EmberClass
-        let position = context.actions[this.name].position
+        console.log(`looking up ${this.name} action`)
 
         return {
-            filePath: lookup(contextModule).filePath,
-            position: position
+            filePath: context.actions[this.name].filePath,
+            position: context.actions[this.name].position
         }
     }
 
@@ -172,8 +172,9 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
         let position = context.properties[this.root].position
 
         return {
-            filePath: lookup(contextModule).filePath,
-            position: position
+             filePath: context.properties[this.root].filePath,
+            position: context.properties[this.root].position
+          
         }
     }
 }
