@@ -6,11 +6,10 @@ import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 
 let babel = require('babel-core');
 
-export default function parseFile(filePath) {
-    let src = fs.readFileSync(filePath, 'utf8');
-    if (path.extname(filePath) === '.js') {
-        return recast.parse(src, { esprima: babel });
-    } else {
-        return htmlBars.parse(src); 
-    }
+export function parseJs(src) {
+    return recast.parse(src, { esprima: babel });
+}
+
+export default function parseHbs(src) {
+    return htmlBars.parse(src);
 }

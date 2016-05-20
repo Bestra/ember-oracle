@@ -2,8 +2,8 @@ import * as path from 'path'
 import * as recast from 'recast'
 import * as fs from 'fs'
 import * as _ from 'lodash'
+import { parseJs } from '../util/parser'
 
-let babel = require('babel-core');
 import * as AST from '../ember/ast'
 import { lookup, fileContents, lookupByAppPath } from '../util/registry'
 type Position = { line: number; column: number }
@@ -11,42 +11,26 @@ type Prop = { [index: string]: Position }
 interface Dict<T> {
     [index: string]: T
 }
-
-function defaultExportProps(ast) {
-    let directProps: AST.Property[] = [];
-    recast.visit(ast, {
-        visitExportDefaultDeclaration: function ({node: {declaration}}) {
-            let args = declaration.arguments;
-            if (args && args.length) {
-                directProps = _.last<any>(args).properties;
-            }
-            return false;
-        }
-    })
-    return directProps;
-}
-
-
-function extractProps(ast, filePath) {
+function extractProps(ast, parent: EmberClass) {
     let dict: Dict<Property> = {};
 
-    defaultExportProps(ast).filter(({value, key}) => {
+    AST.defaultExportProps(ast).filter(({value, key}) => {
         return value.type !== "FunctionExpression" &&
             key.name !== "actions";
     }).forEach((k) => {
-        let newProp = new Property(k, filePath);
+        let newProp = new Property(k, parent);
         dict[newProp.name] = newProp;
     })
 
     return dict;
 }
 
-function extractActions(ast, filePath) {
+function extractActions(ast, parent: EmberClass) {
     let dict: Dict<Action> = {};
-    let actionsHash: any = _.find(defaultExportProps(ast), { key: { name: "actions" } });
+    let actionsHash: any = _.find(AST.defaultExportProps(ast), { key: { name: "actions" } });
     if (actionsHash) {
         actionsHash.value.properties.forEach((p) => {
-            let a = new Action(p, filePath);
+            let a = new Action(p, parent);
             dict[a.name] = a;
         })
         return dict;
@@ -57,83 +41,20 @@ class Property {
     parentClass: EmberClass;
     position: Position
     name: string;
-    filePath: string;
 
-    constructor(astNode, filePath) {
+    constructor(astNode, parentClass: EmberClass) {
         let {loc: {start: {line, column}}, key: {name}} = astNode;
         this.name = name;
         this.position = { line, column };
-        this.filePath = filePath;
+        this.parentClass = parentClass;
     }
 }
 
-class Action extends Property {
-
-}
-
-function rootIdentifier(memberExpr: any) {
-    let findRoot = (aNode) => {
-        if (aNode.type === "Identifier") {
-            return aNode.name;
-        } else if (aNode.object.type === "MemberExpression") {
-            return findRoot(aNode.object);
-        } else {
-            return null;
-        }
-    }
-    return findRoot(memberExpr);
-}
-
-function superClassIdentifier(ast) {
-    let name: string;
-    recast.visit(ast, {
-        visitExportDefaultDeclaration: function ({node: {declaration}}) {
-            if (declaration.callee) {
-                let typeExpr = declaration.callee.object
-                name = rootIdentifier(typeExpr)
-            } else {
-                name = null;
-            }
-            return false;
-        }
-    })
-    return name;
-}
-
-function findImportPathForIdentifier(ast, name: string): string {
-    let importPath = null;
-    recast.visit(ast, {
-        //for some reason the nodePath here conforms to a different spec than the other
-        //paths, hence the funny business
-        visitImportDefaultSpecifier: function (path) {
-            if (path.value.local.type === "Identifier" && path.value.local.name === name) {
-                importPath = path.parentPath.node.source.value;
-            }
-            return false;
-        }
-    });
-    return importPath;
-}
+class Action extends Property {}
 
 function extractMixins(ast): EmberClass[] {
-    let mixinArgs: any[];
-
-    recast.visit(ast, {
-        visitExportDefaultDeclaration: function ({node: {declaration}}) {
-            let args: any[] = declaration.arguments;
-            if (args && args.length > 1) {
-                mixinArgs = args.slice(0, -1);
-            } else {
-                mixinArgs = [];
-            }
-            return false;
-        }
-    })
-
-    let mixins = _(mixinArgs)
-        .filter({ type: "Identifier" })
-        .map<string>('name')
-        .map(name => findImportPathForIdentifier(ast, name))
+    let mixins = _(AST.extractMixinIdentifiers(ast))
+        .map(name => AST.findImportPathForIdentifier(ast, name))
         .map((aPath) => {
             if (!aPath) {
                 console.log("Unable to find import path for ", name);
@@ -150,13 +71,13 @@ function extractMixins(ast): EmberClass[] {
 }
 
 function extractSuperClass(ast): EmberClass {
-    let name = superClassIdentifier(ast);
+    let name = AST.superClassIdentifier(ast);
     let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View']
     if (_.indexOf(emberNames, name) > -1 || !name) {
         return new EmptyEmberClass("component:ember"); //TODO make this a null object
     }
     console.log("superclass name is ", name)
-    let importPath = findImportPathForIdentifier(ast, name);
+    let importPath = AST.findImportPathForIdentifier(ast, name);
 
     if (!importPath) {
         console.log("Unable to find import path for ", name);
@@ -184,7 +105,7 @@ export default class EmberClass {
         return extractMixins(this.ast);
     }
 
-    get filePath() {
+    get filePath(): string {
         return lookup(this.moduleName).filePath;
     }
 
@@ -193,7 +114,7 @@ export default class EmberClass {
         if (this._ast) { return this._ast; }
 
         let src = fileContents(this.moduleName);
-        this._ast = recast.parse(src, { esprima: babel });
+        this._ast = parseJs(src);
         return this._ast;
     }
 
@@ -201,7 +122,7 @@ export default class EmberClass {
         let superProps = this.superClass.properties;
         let mixinProps = this.mixins.map(m => m.properties);
         console.log("super props are ", _.keys(superProps))
-        let localProps = extractProps(this.ast, this.filePath);
+        let localProps = extractProps(this.ast, this);
         return _.assign({}, superProps, ...mixinProps, localProps);
     }
 
@@ -210,15 +131,13 @@ export default class EmberClass {
         let mixinActions = this.mixins.map(m => m.actions);
 
         console.log("super actions are ", _.keys(superActions))
-        let localActions = extractActions(this.ast, this.filePath);
+        let localActions = extractActions(this.ast, this);
         return _.assign({}, superActions, ...mixinActions, localActions);
     }
 
     constructor(moduleName) {
         this.moduleName = moduleName;
     }
-
-
 }
 
 export class EmptyEmberClass extends EmberClass {
