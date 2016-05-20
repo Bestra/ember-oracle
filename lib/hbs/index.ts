@@ -58,11 +58,20 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
         let pairs = this.astNode.hash.pairs;
         return _.map(pairs, 'key');
     }
+    
+    get params() {
+        return this.astNode.params;
+    }
 }
 
 export class Partial extends Mustache {
     get templateModule() {
-        return resolver.componentTemplate(this.pathString);
+        return resolver.componentTemplate(this.templatePath);
+    }
+    
+    get templatePath() {
+          let partialPath = this.params[0] as htmlBars.StringLiteral;
+          return partialPath.original
     }
 
     get templateFilePath() {
@@ -275,7 +284,15 @@ export class Template {
         }, {})
 
     }
-
+    
+    get partials() {
+        return findNodes<htmlBars.MustacheStatement>(
+            this.astNode,
+            'MustacheStatement',
+            n => n.path.original == 'partial'
+        ).map(n => new Partial(this, n))
+    }
+    
     get actions() {
         let isActionExpr = (n) => {
             if (n.type === "SubExpression" ||

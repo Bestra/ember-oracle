@@ -18,11 +18,11 @@ describe("the resolver", function () {
         });
         
         it('turns non-pod paths starting with app/ into module names', function () {
-            assertModule(rootPath + "app/controllers/foo/bar.js", rootPath + "app/", "controller:foo/bar");
-            assertModule(rootPath + "app/routes/foo/bar.js", rootPath + "app/", "route:foo/bar");
-            assertModule(rootPath + "app/templates/foo/bar.hbs", rootPath + "app/", "template:foo/bar");
-            assertModule(rootPath + "app/templates/components/foo/bar-baz.hbs", rootPath + "app/", "template:components/foo/bar-baz");
-            assertModule(rootPath + "app/components/foo/bar-baz.js", rootPath + "app/", "component:foo/bar-baz");
+            assertModule(rootPath + "app/controllers/foo/bar.js", rootPath, "controller:foo/bar");
+            assertModule(rootPath + "app/routes/foo/bar.js", rootPath, "route:foo/bar");
+            assertModule(rootPath + "app/templates/foo/bar.hbs", rootPath, "template:foo/bar");
+            assertModule(rootPath + "app/templates/components/foo/bar-baz.hbs", rootPath, "template:components/foo/bar-baz");
+            assertModule(rootPath + "app/components/foo/bar-baz.js", rootPath, "component:foo/bar-baz");
         });
         
         it("removes the leading '-' from partials in classic paths", function () {

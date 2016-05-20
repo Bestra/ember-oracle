@@ -64,6 +64,9 @@ export function moduleFromPodPath(relativePodPath: string): string {
 //assuming segments like 'app/routes/foo/bar.js'
 export function moduleFromClassicPath(relativeClassicPath: string) : string {
     var parts = relativeClassicPath.split(/[\/\.]/);
+    if (parts[0] === 'app') {
+      parts = parts.slice(1);  
+    }
     let [prefix, ...modulePath] = parts.slice(0, -1); // remove the file extension
     let lastIndex = modulePath.length - 1;
     modulePath[lastIndex] = modulePath[lastIndex].replace(/^-/, ''); // replace leading hyphen on partials

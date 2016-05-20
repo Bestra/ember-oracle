@@ -21,6 +21,7 @@ describe('Template', function () {
 {{#each cats as |cat|}}
     {{cat.name}}
 {{/each}}
+{{partial 'sharedStuff'}}
 {{util/mustache-component name=foo tagName="span"}}
 {{#util/block-component name=foo tagName="span" as |yield1 yield2|}} 
   {{yield1.stuff}}                  
@@ -32,6 +33,12 @@ describe('Template', function () {
       assert.equal(subject.astNode.type, "Program");
     })
 
+    describe('partials', function() {
+      it('returns the partial', function() {
+        assert.equal(subject.partials.length, 1);
+        assert.equal(subject.partials[0].templatePath, 'sharedStuff')
+      })
+    })
     describe('blocks', function () {
       it('returns the 2 blocks in the program', function () {
         assert.equal(subject.blocks.length, 2)
