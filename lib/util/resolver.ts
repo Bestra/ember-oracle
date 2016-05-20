@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as files from '../util/files'
 import * as assert from 'assert'
+import * as _ from 'lodash'
 // yes it's an incredibly naive version of the ember resolver.
 
 export let podPrefix = "pods";
@@ -37,31 +38,42 @@ export function moduleNameFromAppPath(inPath: string) {
 
 // Note that all paths should be relative starting with appRootName
 export function moduleNameFromPath(absoluteFilePath: string, rootPath: string): string {
-    let filePath = absoluteFilePath.split(rootPath)[1];
-    
-    let isPod = filePath.match(/pods/)
+    // TODO: make sure app/ is removed too
+    let relativePath = absoluteFilePath.split(rootPath)[1];
+
+    let isPod = relativePath.match(/pods/)
     if (isPod) {
-        let prefix = path.basename(filePath).split('.')[0]
-        let modulePath;
-        if (prefix === "component") {
-            modulePath = path.dirname(filePath.split('pods/components/')[1]);
-        } else {
-            modulePath = path.dirname(filePath.split('pods/')[1]);
-        }
-        return prefix + ':' + modulePath;
-
+        return moduleFromPodPath(relativePath);
     } else {
-        //assuming segments like 'app/routes/foo/bar.js'
-        var parts = filePath.split(/[\/\.]/);
-        if (parts[0] === 'app') {
-            parts = parts.slice(1);
-        }
-        let prefix = singularize(parts[0]);
-        let modulePath = parts.slice(1, -1);
-
-        return prefix + ":" + modulePath.join('/');
+        return moduleFromClassicPath(relativePath);
     }
-};
+}
+
+export function moduleFromPodPath(relativePodPath: string): string {
+    let modulePath;
+    let prefix = path.basename(relativePodPath).split('.')[0]
+    if (prefix === "component") {
+        modulePath = path.dirname(relativePodPath.split('pods/components/')[1]);
+    } else {
+        modulePath = path.dirname(relativePodPath.split('pods/')[1]);
+    }
+
+    return prefix + ":" + modulePath;
+}
+
+//assuming segments like 'app/routes/foo/bar.js'
+export function moduleFromClassicPath(relativeClassicPath: string) : string {
+    var parts = relativeClassicPath.split(/[\/\.]/);
+    let [prefix, ...modulePath] = parts.slice(0, -1); // remove the file extension
+    let lastIndex = modulePath.length - 1;
+    modulePath[lastIndex] = modulePath[lastIndex].replace(/^-/, ''); // replace leading hyphen on partials
+    
+    return singularize(prefix) + ":" + modulePath.join('/');
+}
+
+function normalizePartialName(path: string) {
+    return path;
+}
 
 export function associatedTemplate(moduleName: string) {
     let [root, path] = moduleName.split(':');
@@ -87,7 +99,7 @@ export function alternateModule(moduleName) {
 export function templateContext(templateModule: string): string {
     let [_root, path] = templateModule.split(':');
     let newRoot = path.match("components") ? "component:" : "controller:";
-    return newRoot + path.replace("components/","");
+    return newRoot + path.replace("components/", "");
 };
 
 export function componentTemplate(componentModule: string) {

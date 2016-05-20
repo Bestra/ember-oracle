@@ -43,7 +43,7 @@ let registry: Dict<RegistryType> = {
 };
 
 let registeredFiles: Dict<string> = {};
-export {registry} ;
+export {registry};
 /**
  * Creates a new module for the given path
  */

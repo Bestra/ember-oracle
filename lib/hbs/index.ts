@@ -3,7 +3,7 @@ import * as path from 'path'
 import * as fs from 'fs'
 import * as ember from '../ember'
 import * as resolver from '../util/resolver'
-import {findComponent, lookup, fileContents} from '../util/registry'
+import { findComponent, lookup, fileContents } from '../util/registry'
 import * as _ from 'lodash'
 import {
     containsPosition,
@@ -61,7 +61,14 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
 }
 
 export class Partial extends Mustache {
+    get templateModule() {
+        return resolver.componentTemplate(this.pathString);
+    }
 
+    get templateFilePath() {
+        let m = lookup(this.templateModule);
+        return m && m.filePath;
+    }
 }
 
 export class Block extends Mustache {
@@ -172,9 +179,9 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
         let position = context.properties[this.root].position
 
         return {
-             filePath: context.properties[this.root].filePath,
+            filePath: context.properties[this.root].filePath,
             position: context.properties[this.root].position
-          
+
         }
     }
 }
@@ -262,7 +269,7 @@ export class Template {
 
         return realPaths.reduce((accum, p) => {
             if (!accum[p.root]) { accum[p.root] = []; }
-            
+
             accum[p.root].push(p.astNode.original);
             return accum;
         }, {})

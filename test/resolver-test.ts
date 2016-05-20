@@ -24,6 +24,10 @@ describe("the resolver", function () {
             assertModule(rootPath + "app/templates/components/foo/bar-baz.hbs", rootPath + "app/", "template:components/foo/bar-baz");
             assertModule(rootPath + "app/components/foo/bar-baz.js", rootPath + "app/", "component:foo/bar-baz");
         });
+        
+        it("removes the leading '-' from partials in classic paths", function () {
+            assertModule(rootPath + "app/templates/foo/-bar-baz.hbs", rootPath + "app/", "template:foo/bar-baz");
+        });
     });
     
     describe('filePathFromAppPath', function() {
