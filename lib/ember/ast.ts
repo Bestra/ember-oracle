@@ -1,9 +1,6 @@
-import * as path from 'path'
 import * as recast from 'recast'
-import * as fs from 'fs'
 import * as _ from 'lodash'
 
-import * as AST from '../ember/ast'
 import { lookup, fileContents, lookupByAppPath } from '../util/registry'
 type Position = { line: number; column: number }
 type Prop = { [index: string]: Position }
@@ -103,7 +100,7 @@ export function findImportPathForIdentifier(ast, name: string): string {
 }
 
 export function defaultExportProps(ast) {
-    let directProps: AST.Property[] = [];
+    let directProps: Property[] = [];
     recast.visit(ast, {
         visitExportDefaultDeclaration: function ({node: {declaration}}) {
             let args = declaration.arguments;

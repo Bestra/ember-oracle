@@ -11,6 +11,22 @@ type Prop = { [index: string]: Position }
 interface Dict<T> {
     [index: string]: T
 }
+
+class Property {
+    parentClass: EmberClass;
+    position: Position
+    name: string;
+
+    constructor(astNode, parentClass: EmberClass) {
+        let {loc: {start: {line, column}}, key: {name}} = astNode;
+        this.name = name;
+        this.position = { line, column };
+        this.parentClass = parentClass;
+    }
+}
+
+class Action extends Property {}
+
 function extractProps(ast, parent: EmberClass) {
     let dict: Dict<Property> = {};
 
@@ -37,20 +53,6 @@ function extractActions(ast, parent: EmberClass) {
     }
 }
 
-class Property {
-    parentClass: EmberClass;
-    position: Position
-    name: string;
-
-    constructor(astNode, parentClass: EmberClass) {
-        let {loc: {start: {line, column}}, key: {name}} = astNode;
-        this.name = name;
-        this.position = { line, column };
-        this.parentClass = parentClass;
-    }
-}
-
-class Action extends Property {}
 
 function extractMixins(ast): EmberClass[] {
     let mixins = _(AST.extractMixinIdentifiers(ast))
@@ -89,11 +91,9 @@ function extractSuperClass(ast): EmberClass {
 
 }
 
-
 function emptyDict<T>(): Dict<T> {
     return {};
 }
-
 
 export default class EmberClass {
     moduleName: string;

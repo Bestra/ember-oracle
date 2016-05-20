@@ -4,9 +4,7 @@ afterEach(function () {
   td.reset();
 })
 
-describe('superClass', function() {
-  
-})
+
 describe('EmberClass', function () {
   var registry, subject, EmberClass;
   beforeEach(function () {
@@ -40,18 +38,18 @@ describe('EmberClass', function () {
       let childSrc =
         `
           import Ember from 'ember';
-          import TaskComponent from 'my-app/components/task';
-          export default TaskComponent.extend({
+          import ParentComponent from 'my-app/components/parent';
+          export default ParentComponent.extend({
             childProp: Ember.inject.service()
           });
           `
       let parentSrc =
         `export default Ember.Component.extend({parentProp: "foo"})`
-      td.when(registry.lookupByAppPath('my-app/components/task')).thenReturn(
-        {definition: new EmberClass("component:task")}
+      td.when(registry.lookupByAppPath('my-app/components/parent')).thenReturn(
+        {definition: new EmberClass("component:parent")}
       )
       td.when(registry.fileContents("component:child")).thenReturn(childSrc);
-      td.when(registry.fileContents("component:task")).thenReturn(parentSrc);
+      td.when(registry.fileContents("component:parent")).thenReturn(parentSrc);
     })
 
     it('properties returns a dictionary of props', function () {
