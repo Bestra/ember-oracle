@@ -21,10 +21,16 @@ let lookupFile = _.flow(path.resolve, registry.lookupModuleName);
 export default function start(appPath: string, enginePaths: string[]) {
     let app = new Koa();
     let router = new Router();
-
+     
+    let t1 = Date.now();
     init(appPath, enginePaths);
+    let t2 = Date.now();
     callGraph.init();
     callGraph.createGraph();
+    let t3 = Date.now();
+    
+    console.log("init in ", t2 - t1);
+    console.log("graph in ", t3 - t2);
     router.get('/', function (ctx, next) {
         ctx.body = "Hey";
     });

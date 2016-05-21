@@ -80,20 +80,20 @@ export function registerModules(rootPath, podPrefix) {
     let podPath = path.join(rootPath, podPrefix);
 
     let podModules = files.getFiles(podPath, ['.js', '.hbs']).map(p => registerPath(p, rootPath));
-    console.log("    registered ", _.flatten(podModules).length, "modules in pods")
+    // console.log("    registered ", _.flatten(podModules).length, "modules in pods")
 
     let otherModules = [];
     _.forEach(SUPPORTED_MODULES, (fileType, moduleName) => {
         let modulePath = path.join(appPath, moduleName + 's');
-        console.log("looking for ", fileType, " files in ", modulePath)
+        // console.log("looking for ", fileType, " files in ", modulePath)
         let foundFiles = files.getFiles(modulePath, [fileType]).map(p => registerPath(p, rootPath))
-        console.log(foundFiles)
+        // console.log(foundFiles)
         otherModules.push(foundFiles);
     });
-    console.log("    registered ", _.flatten(otherModules).length, "other modules")
+    // console.log("    registered ", _.flatten(otherModules).length, "other modules")
 
     let found = podModules.concat(_.flatten(otherModules));
-    console.log("    registered ", found.length, "total modules")
+    // console.log("    registered ", found.length, "total modules")
     return found;
 }
 
@@ -104,13 +104,14 @@ export function registerModules(rootPath, podPrefix) {
 export function lookup(moduleName: string) {
     let [moduleType, modulePath] = moduleName.split(':');
     let modules = registry[moduleType];
-    assert.ok(modules, "modules should exist");
-    
+
+    assert.ok(modules, `modules for type: ${moduleType} should exist`);
+
     return registry[moduleType][modulePath];
 }
 
 export function lookupByAppPath(appPath) {
-    console.log("looking up app path ", appPath);
+    // console.log("looking up app path ", appPath);
     return lookup(resolver.moduleNameFromAppPath(appPath))
 }
 

@@ -62,9 +62,9 @@ function extractMixins(ast): EmberClass[] {
                 console.log("Unable to find import path for ", name);
                 return new EmptyEmberClass("component:ember");
             }
-            console.log("looking up ", aPath)
+            // console.log("looking up ", aPath)
             let m: EmberClass = lookupByAppPath(aPath).definition;
-            console.log("mixin found: ", m)
+            // console.log("mixin found: ", m)
             return m;
         }).value()
 
@@ -78,15 +78,13 @@ function extractSuperClass(ast): EmberClass {
     if (_.indexOf(emberNames, name) > -1 || !name) {
         return new EmptyEmberClass("component:ember"); //TODO make this a null object
     }
-    console.log("superclass name is ", name)
     let importPath = AST.findImportPathForIdentifier(ast, name);
 
     if (!importPath) {
-        console.log("Unable to find import path for ", name);
+        // console.log("Unable to find import path for ", name);
         return new EmptyEmberClass("component:ember");
     }
     let sc = lookupByAppPath(importPath).definition;
-    console.log("superclass found: ", sc)
     return sc;
 
 }
@@ -121,7 +119,7 @@ export default class EmberClass {
     get properties() {
         let superProps = this.superClass.properties;
         let mixinProps = this.mixins.map(m => m.properties);
-        console.log("super props are ", _.keys(superProps))
+        // console.log("super props are ", _.keys(superProps))
         let localProps = extractProps(this.ast, this);
         return _.assign({}, superProps, ...mixinProps, localProps);
     }
@@ -130,7 +128,7 @@ export default class EmberClass {
         let superActions = this.superClass.actions;
         let mixinActions = this.mixins.map(m => m.actions);
 
-        console.log("super actions are ", _.keys(superActions))
+        // console.log("super actions are ", _.keys(superActions))
         let localActions = extractActions(this.ast, this);
         return _.assign({}, superActions, ...mixinActions, localActions);
     }

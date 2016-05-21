@@ -13,7 +13,9 @@ import {
 
 type Position = htmlBars.Position;
 type FilePosition = { filePath; position: Position };
-
+interface Dict<T> {
+    [index: string]: T
+}
 export interface Defineable {
     definedAt: FilePosition;
 }
@@ -58,7 +60,7 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
         let pairs = this.astNode.hash.pairs;
         return _.map(pairs, 'key');
     }
-    
+
     get params() {
         return this.astNode.params;
     }
@@ -68,15 +70,30 @@ export class Partial extends Mustache {
     get templateModule() {
         return resolver.componentTemplate(this.templatePath);
     }
-    
+
     get templatePath() {
-          let partialPath = this.params[0] as htmlBars.StringLiteral;
-          return partialPath.original
+        let partialPath = this.params[0] as htmlBars.StringLiteral;
+        return partialPath.original
     }
 
     get templateFilePath() {
         let m = lookup(this.templateModule);
         return m && m.filePath;
+    }
+
+    get invokedAt() {
+        return {
+            filePath: lookup(this.containingTemplate.moduleName).filePath,
+            position: this.astNode.loc.start
+        }
+    }
+
+    get definedAt() {
+        let filePath = this.templateFilePath;
+        return {
+            filePath,
+            position: { line: 0, column: 0 }
+        }
     }
 }
 
@@ -241,6 +258,51 @@ export class Template {
         this.moduleName = moduleName;
     }
 
+    _cache: {
+        SubExpression: htmlBars.SubExpression[];
+        MustacheStatement: htmlBars.MustacheStatement[];
+        ElementModifierStatement: htmlBars.ElementModifierStatement[];
+        BlockStatement: htmlBars.BlockStatement[];
+        StringLiteral: htmlBars.StringLiteral[];
+        PathExpression: htmlBars.PathExpression[];
+        All: htmlBars.ASTNode[];
+    }
+    get cachedNodes() {
+        if (!!this._cache) { return this._cache; }
+
+        let cachedNodeTypes = [
+            'SubExpression',
+            'MustacheStatement',
+            'ElementModifierStatement',
+            'BlockStatement',
+            'StringLiteral',
+            'PathExpression'
+        ];
+
+        this._cache = {
+            SubExpression: [],
+            MustacheStatement: [],
+            ElementModifierStatement: [],
+            BlockStatement: [],
+            StringLiteral: [],
+            PathExpression: [],
+            All: []
+        };
+
+        let nodes = findNodes<htmlBars.ASTNode>(
+            this.astNode,
+            'All',
+            k => !!this._cache[k.type]
+        );
+
+        nodes.forEach((n) => {
+            this._cache[n.type].push(n);
+            this._cache['All'].push(n);
+        })
+
+        return this._cache;
+    }
+
     get props() {
         let isHelper = (n) => {
             if (n.type === "SubExpression" ||
@@ -253,17 +315,10 @@ export class Template {
                 return false;
             }
         }
-        let helpers = findNodes<htmlBars.Callable>(
-            this.astNode,
-            'All',
-            isHelper
-        )
+        let helpers = this.cachedNodes['All'].filter(isHelper) as htmlBars.Callable[];
 
-        let allPaths = findNodes<htmlBars.PathExpression>(
-            this.astNode,
-            'PathExpression',
-            () => true
-        );
+        let allPaths = this.cachedNodes['PathExpression'];
+
         let SPECIAL_PATH_NAMES = [
             "yield",
             "outlet"
@@ -284,15 +339,13 @@ export class Template {
         }, {})
 
     }
-    
+
     get partials() {
-        return findNodes<htmlBars.MustacheStatement>(
-            this.astNode,
-            'MustacheStatement',
+        return (this.cachedNodes['MustacheStatement']).filter(
             n => n.path.original == 'partial'
         ).map(n => new Partial(this, n))
     }
-    
+
     get actions() {
         let isActionExpr = (n) => {
             if (n.type === "SubExpression" ||
@@ -305,14 +358,11 @@ export class Template {
             }
 
         }
-        return findNodes<any>(
-            this.astNode,
-            'All',
-            isActionExpr
-        ).reduce((accum, node) => {
-            accum[node.params[0].original] = true
-            return accum
-        }, {});
+        return (this.cachedNodes['All'].filter(isActionExpr) as any[])
+            .reduce((accum, node) => {
+                accum[node.params[0].original] = true
+                return accum
+            }, {});
     }
 
     get components() {
@@ -322,17 +372,16 @@ export class Template {
             }
         }).compact().value();
 
-        let mustacheComponents = findNodes<htmlBars.MustacheStatement>(
-            this.astNode,
-            'MustacheStatement',
-            n => !!findComponent(n.path.original)
-        ).map(n => new ComponentInvocation(this, n));
+        let mustacheComponents =
+            (this.cachedNodes['MustacheStatement'])
+                .filter(n => !!findComponent(n.path.original))
+                .map(n => new ComponentInvocation(this, n));
 
         return blockComponents.concat(mustacheComponents);
     }
 
     get blocks() {
-        return findNodes<htmlBars.BlockStatement>(this.astNode, 'BlockStatement', () => true)
+        return (this.cachedNodes['BlockStatement'])
             .map((node) => {
                 if (!!findComponent(node.path.original)) {
                     return new ComponentInvocation(this, node);
@@ -354,11 +403,9 @@ export class Template {
     }
 
     getYieldPosition(index) {
-        let yieldNode = findNodes<htmlBars.MustacheStatement>(
-            this.astNode,
-            'MustacheStatement',
-            node => node.path.original === 'yield'
-        )[0];
+        let yieldNode = (this.cachedNodes['MustacheStatement'])
+            .filter(node => node.path.original === 'yield')[0];
+
         return yieldNode.params[index].loc.start;
     }
 
