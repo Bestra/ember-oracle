@@ -21,14 +21,15 @@ let lookupFile = _.flow(path.resolve, registry.lookupModuleName);
 export default function start(appPath: string, enginePaths: string[]) {
     let app = new Koa();
     let router = new Router();
-     
+
     let t1 = Date.now();
     init(appPath, enginePaths);
     let t2 = Date.now();
     callGraph.init();
     callGraph.createGraph();
     let t3 = Date.now();
-    
+
+
     console.log("init in ", t2 - t1);
     console.log("graph in ", t3 - t2);
     router.get('/', function (ctx, next) {
@@ -98,6 +99,22 @@ export default function start(appPath: string, enginePaths: string[]) {
         let svg = childProcess.execSync('dot -Tsvg', { input: dot });
         ctx.body = svg;
         ctx.type = "image/svg+xml"
+
+    });
+    router.get('/graph.dot', function (ctx, next) {
+        console.log(ctx.query);
+        let templateModule;
+        if (ctx.query.path) {
+            let fullPath = path.resolve(ctx.query.path);
+            templateModule = registry.lookupModuleName(fullPath);
+        } else if (ctx.query.module) {
+            templateModule = ctx.query.module;
+        } else {
+            templateModule = null;
+        }
+
+        let dot = callGraph.createDotGraph(templateModule, true);
+        ctx.body = dot;
 
     });
 

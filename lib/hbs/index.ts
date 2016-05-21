@@ -66,9 +66,16 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
     }
 }
 
-export class Partial extends Mustache {
+export class Partial extends Mustache implements TemplateInvocation {
     get templateModule() {
-        return resolver.componentTemplate(this.templatePath);
+        return 'template:' + this.templatePath;
+    }
+    get isPartial() {
+        return true
+    }
+    
+    get moduleName() {
+        return this.templateModule;
     }
 
     get templatePath() {
@@ -79,6 +86,10 @@ export class Partial extends Mustache {
     get templateFilePath() {
         let m = lookup(this.templateModule);
         return m && m.filePath;
+    }
+    
+    get props() {
+        return {};
     }
 
     get invokedAt() {
@@ -112,7 +123,21 @@ export class Block extends Mustache {
     }
 }
 
-export class ComponentInvocation extends Block {
+export interface TemplateInvocation {
+    invokedAt:
+    {
+        filePath: string,
+        position: Position
+    }
+    astNode: htmlBars.ASTNode;
+
+    templateModule: string;
+    moduleName: string;
+    isPartial: boolean;
+    props: {}
+}
+
+export class ComponentInvocation extends Block implements TemplateInvocation {
     get templateModule() {
         return resolver.componentTemplate(this.pathString);
     }
@@ -127,6 +152,10 @@ export class ComponentInvocation extends Block {
             return [p.key, p.value]
         });
         return _.fromPairs(pairs);
+    }
+    
+    get isPartial() {
+        return false
     }
 
 
@@ -364,7 +393,10 @@ export class Template {
                 return accum
             }, {});
     }
-
+ 
+    get invocations(): TemplateInvocation[] {
+        return [].concat(this.partials, this.components);
+    }
     get components() {
         let blockComponents = _(this.blocks).map((block) => {
             if (block instanceof ComponentInvocation) {

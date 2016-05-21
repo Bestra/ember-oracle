@@ -3,7 +3,7 @@ import * as resolver from './resolver'
 
 import * as _ from 'lodash'
 import * as fs from 'fs'
-import { Template, ComponentInvocation } from '../hbs'
+import { Template, TemplateInvocation } from '../hbs'
 import { EmberClass } from '../ember'
 export let invocationsByTemplate = {};
 export let invocationsByComponent = {};
@@ -11,24 +11,28 @@ export let invocationsByComponent = {};
 export function init() {
     _.forEach(registry.allModules('template'), (val, key) => {
         let template = val.definition as Template;
-        let invocations = template.components;
+        let invocations = template.invocations;
+        let f = template.partials;
+        // if (f.length > 0) {
+        //     console.log("found partials in ", template.moduleName, f.map(n => n.templateModule));
+        // }
         invocationsByTemplate[template.moduleName] =
             {
-                componentInvocations: invocations,
+                invocations: invocations,
                 context: template.renderingContext
             }
     });
 
     invocationsByComponent = _(invocationsByTemplate)
         .values()
-        .map('componentInvocations')
+        .map('invocations')
         .flatten()
         .groupBy('moduleName')
         .value();
 }
 
 export function parentTemplates(componentModule: string) {
-    let components = invocationsByComponent[componentModule] as ComponentInvocation[];
+    let components = invocationsByComponent[componentModule] as TemplateInvocation[];
     return _(components)
         .map(c => c.invokedAt)
         .map(p => [p.filePath, p.position.line, p.position.column].join(':'))
@@ -97,7 +101,7 @@ function createNode(templateModule: string) {
     let node = { template, context }
     gNodes[templateModule] = node;
     if (templateDef) {
-        let invocations = templateDef.components;
+        let invocations = templateDef.invocations;
         invocations.forEach((i) => {
             let edge = {
                 from: node,
