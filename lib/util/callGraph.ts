@@ -44,6 +44,7 @@ export interface InvocationNode {
     position;
     from: CallNode;
     to: CallNode;
+    isPartial: boolean;
 }
 export interface CallNode {
     template: { moduleName; props; actions } // called in the template
@@ -51,12 +52,14 @@ export interface CallNode {
 }
 
 export function graphVizNode(node: CallNode) {
-    return `"${node.template.moduleName}" [URL="http://localhost:5300/graph.svg?module=${node.template.moduleName}" label= "{ ${node.template.moduleName} | { ${_.keys(node.context.props).join('\\n')} | ${_.keys(node.template.props).join('\\n')} } }"];`
+    let url = `URL="http://localhost:5300/graph.svg?module=${node.template.moduleName}"`
+    return `"${node.template.moduleName}" [${url} label= "{ ${node.template.moduleName} | { ${_.keys(node.context.props).join('\\n')} | ${_.keys(node.template.props).join('\\n')} } }"];`
 }
 
 export function graphVizEdge(edge: InvocationNode) {
     if (_.get(edge, 'to.template.moduleName') && _.get(edge, 'from.template.moduleName')) {
-        let label = `[ label ="${Object.keys(edge.props).join('\\n')}" ]`;
+        let style = edge.isPartial ? `style="dashed" color="green"` : '';
+        let label = `[ ${style} label ="${Object.keys(edge.props).join('\\n')}" ]`;
         return `"${edge.from.template.moduleName}" -> "${edge.to.template.moduleName}" ${label};`
     }
 }
@@ -107,6 +110,7 @@ function createNode(templateModule: string) {
                 from: node,
                 to: createNode(i.templateModule),
                 props: i.props,
+                isPartial: i.isPartial,
                 position: i.astNode.loc.start
             }
             gEdges.push(edge);
