@@ -5,20 +5,18 @@ import * as _ from 'lodash'
 import * as fs from 'fs'
 import { Template, TemplateInvocation } from '../hbs'
 import { EmberClass } from '../ember'
-export let invocationsByTemplate = {};
-export let invocationsByComponent = {};
+export let invocationsByTemplate: {[index: string]: {invocations: TemplateInvocation[]; context; template: string;}} = {};
+export let invocationsByComponent:{[index: string]: TemplateInvocation[]} = {};
 
 export function init() {
     _.forEach(registry.allModules('template'), (val, key) => {
         let template = val.definition as Template;
         let invocations = template.invocations;
-        let f = template.partials;
-        // if (f.length > 0) {
-        //     console.log("found partials in ", template.moduleName, f.map(n => n.templateModule));
-        // }
+     
         invocationsByTemplate[template.moduleName] =
             {
                 invocations: invocations,
+                template: template.moduleName,
                 context: template.renderingContext
             }
     });
@@ -28,11 +26,11 @@ export function init() {
         .map('invocations')
         .flatten()
         .groupBy('moduleName')
-        .value();
+        .value() as any;
 }
 
 export function parentTemplates(componentModule: string) {
-    let components = invocationsByComponent[componentModule] as TemplateInvocation[];
+    let components = invocationsByComponent[componentModule];
     return _(components)
         .map(c => c.invokedAt)
         .map(p => [p.filePath, p.position.line, p.position.column].join(':'))
@@ -46,6 +44,7 @@ export interface InvocationNode {
     to: CallNode;
     isPartial: boolean;
 }
+
 export interface CallNode {
     template: { moduleName; props; actions } // called in the template
     context: { moduleName; props; actions }

@@ -97,16 +97,13 @@ function emptyDict<T>(): Dict<T> {
 
 export default class EmberClass {
     moduleName: string;
-
+    filePath: string;
+    
     get superClass(): EmberClass {
         return extractSuperClass(this.ast);
     }
     get mixins(): EmberClass[] {
         return extractMixins(this.ast);
-    }
-
-    get filePath(): string {
-        return lookup(this.moduleName).filePath;
     }
 
     _ast: any;
@@ -135,8 +132,9 @@ export default class EmberClass {
         return _.assign<Dict<Action>, Dict<Action>>({}, superActions, ...mixinActions, localActions);
     }
 
-    constructor(moduleName) {
+    constructor(moduleName, filePath) {
         this.moduleName = moduleName;
+        this.filePath = filePath;
     }
 }
 
@@ -147,6 +145,10 @@ export class EmptyEmberClass extends EmberClass {
 
     get mixins() {
         return [];
+    }
+    
+    constructor(moduleName) {
+        super(moduleName, "NO FILE");
     }
 
     get properties() {

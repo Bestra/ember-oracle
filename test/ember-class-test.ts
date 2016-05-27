@@ -10,7 +10,7 @@ describe('EmberClass', function () {
   beforeEach(function () {
     registry = td.replace('../lib/util/registry');
     EmberClass = require('../lib/ember/emberClass').default;
-    subject = new EmberClass("component:child");
+    subject = new EmberClass("component:child", "testFile");
   });
 
   describe('component is an Ember subclass', function () {
@@ -46,7 +46,7 @@ describe('EmberClass', function () {
       let parentSrc =
         `export default Ember.Component.extend({parentProp: "foo"})`
       td.when(registry.lookupByAppPath('my-app/components/parent')).thenReturn(
-        {definition: new EmberClass("component:parent")}
+        {definition: new EmberClass("component:parent", "parentPath")}
       )
       td.when(registry.fileContents("component:child")).thenReturn(childSrc);
       td.when(registry.fileContents("component:parent")).thenReturn(parentSrc);

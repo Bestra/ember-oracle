@@ -56,7 +56,7 @@ export function registerPath(filePath: string, appRoot: string) {
         if (moduleType === 'template') {
             def = new Template(moduleName);
         } else {
-            def = new EmberClass(moduleName);
+            def = new EmberClass(moduleName, filePath);
         }
         registry[moduleType][modulePath] = { filePath, definition: def };
         return moduleName;
@@ -71,7 +71,7 @@ export function registerAppModules() {
 }
 
 export function registerManually(moduleName, filePath) {
-    registry['imports'][moduleName] = { filePath, definition: new EmberClass(moduleName) }
+    registry['imports'][moduleName] = { filePath, definition: new EmberClass(moduleName, filePath) }
 }
 
 export function registerModules(rootPath, podPrefix) {
