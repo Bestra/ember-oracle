@@ -62,6 +62,7 @@ export default function start(appPath: string, enginePaths: string[]) {
 
     router.get('/templates/parents', function (ctx, next) {
         console.log(ctx.query);
+        // TODO: change callgraph to work off templates first rather than context
         let findParents = _.flow(registry.lookupModuleName, resolver.templateContext, callGraph.parentTemplates)
         let fullPath = path.resolve(ctx.query.path);
 

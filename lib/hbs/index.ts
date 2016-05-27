@@ -12,7 +12,7 @@ import {
 } from './util'
 
 type Position = htmlBars.Position;
-type FilePosition = { filePath; position: Position };
+type FilePosition = { filePath: string; position: Position };
 interface Dict<T> {
     [index: string]: T
 }
@@ -204,10 +204,11 @@ export class Action extends TemplateMember<htmlBars.Callable> {
 
         let context = lookup(contextModule).definition as ember.EmberClass
         console.log(`looking up ${this.name} action`)
+        let action = context.actions[this.name]
 
         return {
-            filePath: context.actions[this.name].filePath,
-            position: context.actions[this.name].position
+            filePath: action.filePath,
+            position: action.position
         }
     }
 
@@ -231,11 +232,11 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
         )
 
         let context = lookup(contextModule).definition as ember.EmberClass
-        let position = context.properties[this.root].position
-
+        let prop = context.properties[this.root];
+      
         return {
-            filePath: context.properties[this.root].filePath,
-            position: context.properties[this.root].position
+            filePath: prop.filePath,
+            position: prop.position
 
         }
     }

@@ -16,12 +16,14 @@ class Property {
     parentClass: EmberClass;
     position: Position
     name: string;
+    filePath: string;
 
     constructor(astNode, parentClass: EmberClass) {
         let {loc: {start: {line, column}}, key: {name}} = astNode;
         this.name = name;
         this.position = { line, column };
         this.parentClass = parentClass;
+        this.filePath = parentClass.filePath;
     }
 }
 
@@ -116,21 +118,21 @@ export default class EmberClass {
         return this._ast;
     }
 
-    get properties() {
+    get properties(): Dict<Property> {
         let superProps = this.superClass.properties;
         let mixinProps = this.mixins.map(m => m.properties);
         // console.log("super props are ", _.keys(superProps))
         let localProps = extractProps(this.ast, this);
-        return _.assign({}, superProps, ...mixinProps, localProps);
+        return _.assign<Dict<Property>, Dict<Property>>({}, superProps, ...mixinProps, localProps);
     }
 
-    get actions() {
+    get actions(): Dict<Action> {
         let superActions = this.superClass.actions;
         let mixinActions = this.mixins.map(m => m.actions);
 
         // console.log("super actions are ", _.keys(superActions))
         let localActions = extractActions(this.ast, this);
-        return _.assign({}, superActions, ...mixinActions, localActions);
+        return _.assign<Dict<Action>, Dict<Action>>({}, superActions, ...mixinActions, localActions);
     }
 
     constructor(moduleName) {
