@@ -46,13 +46,16 @@ export interface InvocationNode {
 }
 
 export interface CallNode {
+    isPartial: boolean;
     template: { moduleName; props; actions } // called in the template
     context: { moduleName; props; actions }
 }
 
 export function graphVizNode(node: CallNode) {
     let url = `URL="http://localhost:5300/graph.svg?module=${node.template.moduleName}"`
-    return `"${node.template.moduleName}" [${url} label= "{ ${node.template.moduleName} | { ${_.keys(node.context.props).join('\\n')} | ${_.keys(node.template.props).join('\\n')} } }"];`
+    let style = node.isPartial ? `style="dashed" color="green"` : '';
+
+    return `"${node.template.moduleName}" [${url} ${style} label= "{ ${node.template.moduleName} | { ${_.keys(node.context.props).join('\\n')} | ${_.keys(node.template.props).join('\\n')} } }"];`
 }
 
 export function graphVizEdge(edge: InvocationNode) {
@@ -64,7 +67,7 @@ export function graphVizEdge(edge: InvocationNode) {
 }
 export let gNodes: { [index: string]: CallNode } = {};
 export let gEdges: InvocationNode[] = [];
-function createNode(templateModule: string) {
+function createNode(templateModule: string, isPartial: boolean) {
     if (gNodes[templateModule]) { return gNodes[templateModule]; }
 
     let contextModule = resolver.templateContext(templateModule);
@@ -100,14 +103,14 @@ function createNode(templateModule: string) {
             actions: {}
         }
     }
-    let node = { template, context }
+    let node = { template, context, isPartial: isPartial }
     gNodes[templateModule] = node;
     if (templateDef) {
         let invocations = templateDef.invocations;
         invocations.forEach((i) => {
             let edge = {
                 from: node,
-                to: createNode(i.templateModule),
+                to: createNode(i.templateModule, i.isPartial),
                 props: i.props,
                 isPartial: i.isPartial,
                 position: i.astNode.loc.start
@@ -121,7 +124,7 @@ function createNode(templateModule: string) {
 export function createGraph() {
     let templateCount = _.keys(registry.allModules('template')).length
     _.forEach(registry.allModules('template'), (val, key) => {
-        createNode("template:" + key);
+        createNode("template:" + key, false);
         process.stderr.write('.')
     });
     return { gNodes, gEdges };
