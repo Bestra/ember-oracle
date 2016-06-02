@@ -203,7 +203,7 @@ export class Action extends TemplateMember<htmlBars.Callable> {
         )
 
         let context = lookup(contextModule).definition as ember.EmberClass
-        console.log(`looking up ${this.name} action`)
+        console.log(`looking up ${this.name} action from ${_.keys(context.actions)}`) 
         let action = context.actions[this.name]
 
         return {
@@ -480,11 +480,7 @@ export class Template {
             }
 
         }
-        let actionExpr = findNodes<any>(
-            this.astNode,
-            'All',
-            isActionExpr
-        )[0]
+        let actionExpr = this.cachedNodes['All'].filter(isActionExpr)[0];
         if (actionExpr) {
             return new Action(this, actionExpr);
         } else if (pathExpr) {
