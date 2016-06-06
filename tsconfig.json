@@ -3,12 +3,12 @@
         "target": "es5",
         "module": "commonjs",
         "sourceMap": true,
-        "outDir": "dist"
+        "outDir": "dist",
+        "strictNullChecks": true
             
     },
     "exclude": [
         "node_modules",
-        "typings/browser.d.ts",
-        "typings/browser"
+        "typings/index.d.ts"
     ]
 }
