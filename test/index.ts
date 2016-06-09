@@ -1,3 +1,4 @@
-import './ember-class-test'
-import './hbs-template-test'
-import './resolver-test'
+import './emberClassTest'
+import './hbsTemplateTest'
+import './resolverTest'
+import './routeTest'

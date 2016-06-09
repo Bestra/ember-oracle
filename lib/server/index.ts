@@ -53,6 +53,7 @@ export default function start(appPath: string, enginePaths: string[]) {
         let queryPosition = { line: parseInt(ctx.query.line), column: parseInt(ctx.query.column) };
         let defineable = template.parsePosition(queryPosition);
         let position = defineable.definedAt
+        console.log("found position: ", JSON.stringify(position))
         if (ctx.query.format === "compact") {
             ctx.body = [position.filePath, position.position.line, position.position.column].join(':');
         } else {
