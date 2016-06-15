@@ -5,7 +5,7 @@
 			"name": "Server",
 			"type": "node",
 			"request": "launch",
-			"program": "${workspaceRoot}/dist/bin/server.js",
+			"program": "${workspaceRoot}/bin/server.js",
 			"stopOnEntry": false,
 			"args": ["/Users/bestra/mh/tahi/client/", 
 			"/Users/bestra/mh/tahi/engines/plos_billing/client/app/",
@@ -59,9 +59,9 @@
 			"name": "Test",
 			"type": "node",
 			"request": "launch",
-			"program": "${workspaceRoot}/node_modules/.bin/mocha",
+			"program": "${workspaceRoot}/node_modules/.bin/_mocha",
 			"stopOnEntry": false,
-			"args": ["dist/test/index.js"],
+			"args": ["./test/"],
 			"cwd": "${workspaceRoot}",
 			"preLaunchTask": null,
 			"runtimeExecutable": null,
@@ -72,8 +72,7 @@
 				"NODE_ENV": "development"
 			},
 			"externalConsole": false,
-			"sourceMaps": true,
-			"outDir": null
+			"sourceMaps": true
 		},
 		{
 			"name": "Attach",

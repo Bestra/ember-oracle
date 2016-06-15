@@ -1,4 +1,7 @@
 node_modules
 typings
+lib/**/*.js
+test/**/*.js
+bin/**/*.js
 *.js.map
 dist/

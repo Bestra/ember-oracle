@@ -1,11 +1,11 @@
 {
-  "ambientDependencies": {
+  "globalDependencies": {
+    "estree": "registry:dt/estree#0.0.0+20160317120654",
     "koa": "registry:dt/koa#2.0.0+20160317120654",
     "koa-router": "registry:dt/koa-router#7.0.0+20160314083221",
     "mocha": "registry:dt/mocha#2.2.5+20160317120654",
     "node": "registry:dt/node#4.0.0+20160319033040",
-    "progress": "registry:dt/progress#1.1.8+20160317120654",
-    "qunit": "registry:dt/qunit#1.16.0+20160316155526"
+    "progress": "registry:dt/progress#1.1.8+20160317120654"
   },
   "dependencies": {
     "lodash": "registry:npm/lodash#4.0.0+20160305082308"
