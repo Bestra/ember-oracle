@@ -3,16 +3,18 @@ import findRoutes from '../lib/ember/routeGraph'
 import * as assert from 'assert'
 
 describe.only('the route tree', function () {
-    describe('standard stuff', function () {
+    describe('nested routes', function () {
         let src = `let Router = Ember.Router.extend({
         location: config.locationType
         });
 
         Router.map(function() {
-        this.route('dashboard', function() {
-            this.route('edit');
-        });
-        this.route('widget-factory');
+            this.route('dashboard', {path: 'dash'}, function() {
+                this.route('edit');
+            });
+            this.route('widget-factory', function() {
+                this.route('new');
+            });
         });
         `
         let ast = parseJs(src)
@@ -20,19 +22,23 @@ describe.only('the route tree', function () {
             let root = findRoutes(ast);
             assert.equal(root.name, 'application')
             assert.equal(root.children.length, 2)
-            let editRoute = root.children[0];
-            assert.equal(editRoute.children.length, 1)
+            let dashboardRoute = root.children[0];
+            assert.equal(dashboardRoute.children.length, 1)
         })
-        
 
+        it('the application route has the "application" module');
+        it('routes below it do not start with "application" in the module names')       
     })
-    describe('nested routes', function () {
-        it('generates index routes for each nested route')
 
+    describe('resetNamespace', function() {
+      it("the resetNamespace option is respected for routes", function() {
+        
+      })
     })
 
     describe('resources', function () {
-        it('detects legacy nested resources too')
+        it('detects legacy nested resources too');
+        it('resources reset their module namespace');
     })
 
 })
