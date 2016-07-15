@@ -103,8 +103,8 @@ export default function start(appPath: string, enginePaths: string[]) {
         } else {
             templateModule = null;
         }
-
-        let dot = callGraph.createDotGraph(templateModule, true);
+        let collapse = ctx.query.collapse || false;
+        let dot = callGraph.createDotGraph(templateModule, true, collapse);
         let svg = childProcess.execSync('dot -Tsvg', { input: dot });
         ctx.body = svg;
         ctx.type = "image/svg+xml"

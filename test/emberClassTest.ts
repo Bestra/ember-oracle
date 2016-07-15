@@ -1,4 +1,5 @@
 let td = require('testdouble');
+import * as _ from 'lodash'
 import * as assert from 'assert'
 afterEach(function () {
   td.reset();
@@ -29,6 +30,30 @@ describe('EmberClass', function () {
       assert.ok(subject.properties['childProp']);
     });
 
+    describe('consumed properties', function () {
+      beforeEach(function () {
+        let childSrc =
+          `
+        import Ember from 'ember';
+        export default Ember.Object.extend({
+          childProp: Ember.computed(function() {
+            this.get('foo');
+            this.get('bar');
+          })
+        });
+        `
+        td.when(registry.fileContents("component:child")).thenReturn(childSrc);
+      })
+
+      it('properties contains the list of consumed keys', function() {
+        let keys = subject.properties['childProp'].consumedKeys;
+        assert.ok(_.includes(keys, 'foo'));
+        assert.ok(_.includes(keys, 'bar'))
+      })
+
+
+    })
+
     it('superclass is the default ember class', function () {
       assert.equal(subject.superClass.moduleName, 'component:ember');
     });
@@ -46,7 +71,7 @@ describe('EmberClass', function () {
       let parentSrc =
         `export default Ember.Component.extend({parentProp: "foo"})`
       td.when(registry.lookupByAppPath('my-app/components/parent')).thenReturn(
-        {definition: new EmberClass("component:parent", "parentPath")}
+        { definition: new EmberClass("component:parent", "parentPath") }
       )
       td.when(registry.fileContents("component:child")).thenReturn(childSrc);
       td.when(registry.fileContents("component:parent")).thenReturn(parentSrc);

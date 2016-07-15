@@ -10,7 +10,7 @@ describe('Template', function () {
   beforeEach(function () {
     registry = td.replace('../lib/util/registry');
     var { Template } = require('../lib/hbs');
-    subject = new Template("template:foo");
+    subject = new Template("template:foo", null);
   })
   describe('template src is available in the registry', function () {
     beforeEach(function () {

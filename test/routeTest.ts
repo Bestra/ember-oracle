@@ -2,7 +2,7 @@ import { parseJs } from '../lib/util/parser'
 import findRoutes from '../lib/ember/routeGraph'
 import * as assert from 'assert'
 
-describe.only('the route tree', function () {
+describe('the route tree', function () {
     describe('nested routes', function () {
         let src = `let Router = Ember.Router.extend({
         location: config.locationType

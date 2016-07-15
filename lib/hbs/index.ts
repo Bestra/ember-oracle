@@ -279,13 +279,15 @@ class NoContext {
 }
 export class Template {
     moduleName: string;
+    filePath: string;
     get renderingContext() {
         return lookup(resolver.templateContext(this.moduleName))
             || new NoContext(this.moduleName);
     }
 
-    constructor(moduleName: string) {
+    constructor(moduleName: string, filePath: string) {
         this.moduleName = moduleName;
+        this.filePath = filePath;
     }
 
     _cache: {
@@ -423,10 +425,7 @@ export class Template {
                 }
             });
     }
-    get filePath() {
-        return lookup(this.moduleName).filePath;
-    }
-
+ 
     _astNode: htmlBars.Program;
     get astNode() {
         if (this._astNode) { return this._astNode }

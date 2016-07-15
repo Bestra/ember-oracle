@@ -9,7 +9,7 @@ import * as _ from 'lodash';
 import * as path from 'path';
 import * as util from 'util';
 import { readFileSync } from 'fs';
-import { EmberClass } from '../ember';
+import { EmberClass, EmptyEmberClass } from '../ember';
 import { Template } from '../hbs'
 import * as assert from 'assert';
 
@@ -54,7 +54,7 @@ export function registerPath(filePath: string, appRoot: string) {
     if (registry[moduleType]) {
         let def;
         if (moduleType === 'template') {
-            def = new Template(moduleName);
+            def = new Template(moduleName, filePath);
         } else {
             def = new EmberClass(moduleName, filePath);
         }
@@ -99,20 +99,19 @@ export function registerModules(rootPath, podPrefix) {
 
 
 /**
- * Only retrieve items from the registry by module name
+ * Only retrieve items from the registry by module name.
  */
 export function lookup(moduleName: string) {
     let [moduleType, modulePath] = moduleName.split(':');
     let modules = registry[moduleType];
 
     assert.ok(modules, `modules for type: ${moduleType} should exist`);
-
     return registry[moduleType][modulePath];
+
 }
 
 export function lookupByAppPath(appPath) {
-    // console.log("looking up app path ", appPath);
-    return lookup(resolver.moduleNameFromAppPath(appPath))
+    return lookup(resolver.moduleNameFromAppPath(appPath));
 }
 
 export function lookupModuleName(filePath) {
@@ -123,9 +122,27 @@ export function lookupModuleName(filePath) {
 
 /**
  * Given a name like foo/my-component
+ * If the component is template-only (if the template is defined in the registry)
+ * this function returns a null-object representing the component
  */
 export function findComponent(helperName: string) {
-    return lookup(`component:${helperName}`);
+    let componentModuleName = `component:${helperName}`;
+    let componentTemplateModuleName = `template:components/${helperName}`;
+
+    let componentModule = lookup(componentModuleName);
+
+    if (componentModule) {
+        return componentModule
+    } else {
+        if (lookup(componentTemplateModuleName)) {
+            return {
+                filePath: null,
+                definition: new EmptyEmberClass(componentModuleName)
+            }
+        } else {
+            return null;
+        }
+    }
 };
 
 export function fileContents(moduleName: string) {

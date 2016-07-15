@@ -17,6 +17,7 @@ class Property {
     position: Position
     name: string;
     filePath: string;
+    consumedKeys: string[];
 
     constructor(astNode, parentClass: EmberClass) {
         let {loc: {start: {line, column}}, key: {name}} = astNode;
@@ -24,10 +25,11 @@ class Property {
         this.position = { line, column };
         this.parentClass = parentClass;
         this.filePath = parentClass.filePath;
+        this.consumedKeys = AST.findConsumedKeys(astNode);
     }
 }
 
-class Action extends Property {}
+class Action extends Property { }
 
 function extractProps(ast, parent: EmberClass) {
     let dict: Dict<Property> = {};
@@ -55,19 +57,16 @@ function extractActions(ast, parent: EmberClass) {
     }
 }
 
-
 function extractMixins(ast): EmberClass[] {
     let mixins = _(AST.extractMixinIdentifiers(ast))
-        .map(name => AST.findImportPathForIdentifier(ast, name))
-        .map((aPath) => {
-            if (!aPath) {
-                console.log("Unable to find import path for ", name);
+        .map(name => {
+            let aPath = AST.findImportPathForIdentifier(ast, name);
+            if (!aPath || !lookupByAppPath(aPath)) {
+                console.log("Unable to find module for ", name, " looking in ", aPath);
                 return new EmptyEmberClass("component:ember");
+            } else {
+                return lookupByAppPath(aPath).definition;
             }
-            // console.log("looking up ", aPath)
-            let m: EmberClass = lookupByAppPath(aPath).definition;
-            // console.log("mixin found: ", m)
-            return m;
         }).value()
 
     return mixins;
@@ -82,12 +81,13 @@ function extractSuperClass(ast): EmberClass {
     }
     let importPath = AST.findImportPathForIdentifier(ast, name);
 
-    if (!importPath) {
-        // console.log("Unable to find import path for ", name);
+    if (!importPath || !lookupByAppPath(importPath)) {
+        console.log("Unable to find module for ", name, " looking in ", importPath);
+
         return new EmptyEmberClass("component:ember");
+    } else {
+        return lookupByAppPath(importPath).definition;
     }
-    let sc = lookupByAppPath(importPath).definition;
-    return sc;
 
 }
 
@@ -98,7 +98,7 @@ function emptyDict<T>(): Dict<T> {
 export default class EmberClass {
     moduleName: string;
     filePath: string;
-    
+
     get superClass(): EmberClass {
         return extractSuperClass(this.ast);
     }
@@ -146,7 +146,7 @@ export class EmptyEmberClass extends EmberClass {
     get mixins() {
         return [];
     }
-    
+
     constructor(moduleName) {
         super(moduleName, "NO FILE");
     }

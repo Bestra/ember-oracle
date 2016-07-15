@@ -1,3 +1,3 @@
 import EmberClass from './emberClass'
-
-export { EmberClass }
+import { EmptyEmberClass } from './emberClass'
+export { EmberClass, EmptyEmberClass }

@@ -8,30 +8,28 @@ interface Dict<T> {
     [index: string]: T
 }
 
-export interface Loc {
-    line: number;
-    column: number;
+export interface ObjectProperty extends ESTree.Property {
+    key: ESTree.Identifier;
 }
 
-export interface Node {
-    type: string;
-    start: number;
-    end: number;
-    loc: {
-        start: Loc;
-        end: Loc;
-    }
-}
-
-export interface NodePath {
-    node: Node;
-    parent: NodePath;
-    scope;
-}
-
-export interface Property extends Node {
-    key: { name: "string" };
-    value: { type: "string" };
+export function findConsumedKeys(astNode): string[] {
+    let isGet = _.matches({
+        callee: {
+            object: { type: "ThisExpression" },
+            property: { name: "get" }
+        }
+    });
+    let keys: string[] = [];
+    recast.visit(astNode, {
+        visitCallExpression(path) {
+            let getter = path.node;
+            if (isGet(getter)) {
+              keys.push(getter.arguments[0].value);
+            }
+            this.traverse(path);
+        }
+    });
+    return keys;
 }
 
 export function rootIdentifier(memberExpr: any) {
@@ -100,7 +98,7 @@ export function findImportPathForIdentifier(ast, name: string): string {
 }
 
 export function defaultExportProps(ast) {
-    let directProps: Property[] = [];
+    let directProps: ObjectProperty[] = [];
     recast.visit(ast, {
         visitExportDefaultDeclaration: function ({node: {declaration}}) {
             let args = declaration.arguments;

@@ -40,6 +40,7 @@ export function parentTemplates(componentModule: string) {
 export interface InvocationNode {
     props;
     position;
+    count: number;
     from: CallNode;
     to: CallNode;
     isPartial: boolean;
@@ -47,6 +48,7 @@ export interface InvocationNode {
 
 export interface CallNode {
     isPartial: boolean;
+    invocations: InvocationNode[];
     template: { moduleName; props; actions } // called in the template
     context: { moduleName; props; actions }
 }
@@ -60,8 +62,10 @@ export function graphVizNode(node: CallNode) {
 
 export function graphVizEdge(edge: InvocationNode) {
     if (_.get(edge, 'to.template.moduleName') && _.get(edge, 'from.template.moduleName')) {
+        let labelText = [edge.count, ...Object.keys(edge.props)].join('\\n');
+
         let style = edge.isPartial ? `style="dashed" color="green"` : '';
-        let label = `[ ${style} label ="${Object.keys(edge.props).join('\\n')}" ]`;
+        let label = `[ ${style} label ="${labelText}" ]`;
         return `"${edge.from.template.moduleName}" -> "${edge.to.template.moduleName}" ${label};`
     }
 }
@@ -103,7 +107,11 @@ function createNode(templateModule: string, isPartial: boolean) {
             actions: {}
         }
     }
-    let node = { template, context, isPartial: isPartial }
+    let node: CallNode = {
+        template,
+        context, isPartial,
+        invocations: [] 
+    }
     gNodes[templateModule] = node;
     if (templateDef) {
         let invocations = templateDef.invocations;
@@ -112,9 +120,11 @@ function createNode(templateModule: string, isPartial: boolean) {
                 from: node,
                 to: createNode(i.templateModule, i.isPartial),
                 props: i.props,
+                count: 1,
                 isPartial: i.isPartial,
                 position: i.astNode.loc.start
             }
+            node.invocations.push(edge);
             gEdges.push(edge);
         });
 
@@ -130,18 +140,41 @@ export function createGraph() {
     return { gNodes, gEdges };
 }
 
-function outputGraph(nodes, edges) {
+function condenseEdges(node: CallNode) {
+    let condensed = [];
+    let a = _(node.invocations)
+    .groupBy(i => i.to.template.moduleName)
+    .map(function(invocations: InvocationNode[], toModule) {
+      let groupedInvocations = _.groupBy(invocations, i => Object.keys(i.props).sort().join(','));
+      return _.map(groupedInvocations, (grp, propList): InvocationNode => {
+        let {props, isPartial, from, to, position} = grp[0];
+        return {props, isPartial, from, to, position, count: grp.length}
+      });
+    })
+    .flatten<InvocationNode>()
+    .value();
+
+    return a;
+}
+function outputGraph(nodes: CallNode[], edges: InvocationNode[], collapse) {
+    let outputEdges;
+    if (collapse) {
+      let edgesPerNode = _.groupBy(edges, 'from');
+      outputEdges = _.flatMap(nodes, condenseEdges)
+    } else {
+        outputEdges = edges;
+    }
     let output = [
         "digraph {",
         "node [shape=record];",
         ...nodes.map(graphVizNode),
-        ...edges.map(graphVizEdge),
+        ...outputEdges.map(graphVizEdge),
         "}"
     ].join('\n');
     return output; 
 }
 
-export function createDotGraph(moduleName: string, recurse?: boolean) {
+export function createDotGraph(moduleName: string, recurse?: boolean, collapseInvocations?: boolean) {
     let findParentEdges = (moduleName: string, found) => {
         let edges = gEdges.filter(e => e.to.template.moduleName === moduleName);
         found.push(...edges);
@@ -154,11 +187,11 @@ export function createDotGraph(moduleName: string, recurse?: boolean) {
     if (moduleName) {
         let node = gNodes[moduleName];
         let parentEdges = findParentEdges(moduleName, []);
-        let nodes = _.uniq(parentEdges.map(e => e.from).concat(parentEdges.map(e => e.to)));
-        return outputGraph(nodes, parentEdges)
+        let nodes = _.uniq<CallNode>(parentEdges.map(e => e.from).concat(parentEdges.map(e => e.to)));
+        return outputGraph(nodes, parentEdges, collapseInvocations)
     } else {
-        let graphNodes = _.values(gNodes);
+        let graphNodes = _.values<CallNode>(gNodes);
         let graphEdges = gEdges;
-        return outputGraph(graphNodes, graphEdges);      
+        return outputGraph(graphNodes, graphEdges, collapseInvocations);      
     }
 }
