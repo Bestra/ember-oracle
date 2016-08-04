@@ -2,9 +2,9 @@
   "name": "ember-analyzer",
   "version": "0.0.1",
   "description": "Utils for analyzing ember code",
-  "main": "dist/index.js",
+  "main": "./bin/server/index.js",
   "scripts": {
-    "start": "./dist/bin/server/index.js",
+    "start": "./bin/server/index.js",
     "test": "node_modules/.bin/mocha ./dist/test/index.js",
     "typescript-version": "tsc -v",
     "watch": "tsc -w -p .",
