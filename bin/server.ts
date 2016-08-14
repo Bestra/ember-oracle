@@ -1,3 +1,4 @@
+#! /usr/bin/env node
 import startServer from '../lib/server'
 
 function start() {
