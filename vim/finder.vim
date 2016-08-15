@@ -5,15 +5,19 @@ function! EmberDef()
   let location = system(full_command)
   echo location
   let segments = split(location, ":")
-  let new_path = segments[0]
-  let line = segments[1]
-  let column = segments[2]
 
+  let new_path = segments[0]
   if current_file !=? new_path
     exec "edit ".new_path
   endif
 
-  call cursor(line, column)
+  if len(segments) > 1
+    let line = segments[1]
+    let column = segments[2]
+    call cursor(line, column)
+  else
+    echom "No position in the file was found"
+  endif
 
 endfunction
 
