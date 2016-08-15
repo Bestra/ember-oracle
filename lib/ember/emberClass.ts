@@ -75,7 +75,7 @@ function extractMixins(ast): EmberClass[] {
 
 function extractSuperClass(ast): EmberClass {
     let name = AST.superClassIdentifier(ast);
-    let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View']
+    let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View', 'Mixin']
     if (_.indexOf(emberNames, name) > -1 || !name) {
         return new EmptyEmberClass("component:ember"); //TODO make this a null object
     }
