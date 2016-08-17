@@ -6,12 +6,13 @@
 
 ##Install the vim plugin
 
-For now you'll want to somehow source `vim/finder.vim` in your `.vimrc`
+For now you'll want to source `vim/finder.vim` in your `.vimrc`
+`source ~/ember-analyzer/vim/finder.vim`
 
 ##Create a config file in your project (optional)
 
 In order for the server to load addons (for now only in-repo addons) you'll
-want to add a `.ember-analyzer` file to your project's root directory.  
+want to add a `.ember-analyzer` file to your project's root directory.
 It's a JSON file that only has one key for `addonPaths`.  Here's an example.
 ```json
 {
@@ -25,7 +26,7 @@ traditional addons is coming...later.
 ##Install and run the node server
 You'll probably need node v5.x or higher
 - `npm run dev-setup`
-- `ember-analyzer-start-server $YOUR_EMBER_APP
+- `ember-analyzer-start-server $YOUR_EMBER_APP`
 
 
 ###Commands to run in hbs templates
