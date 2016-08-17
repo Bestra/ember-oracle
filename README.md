@@ -8,11 +8,23 @@
 
 For now you'll want to somehow source `vim/finder.vim` in your `.vimrc`
 
+##Create a config file in your project (optional)
+
+In order for the server to load addons (for now only in-repo addons) you'll
+want to add a `.ember-analyzer` file to your project's root directory.  
+It's a JSON file that only has one key for `addonPaths`.  Here's an example.
+```json
+{
+  "addonPaths": ["../my-addon/", "~/some-other-addon"]
+}
+```
+
+If you're not referencing an in-repo addon this is optional.  Support for
+traditional addons is coming...later.
+
 ##Install and run the node server
 You'll probably need node v5.x or higher
-- `npm install && typings install`
-- `npm run build`
-- `npm run link`
+- `npm run dev-setup`
 - `ember-analyzer-start-server $YOUR_EMBER_APP
 
 

@@ -4,6 +4,7 @@
   "description": "Utils for analyzing ember code",
   "main": "bin/server.js",
   "scripts": {
+    "dev-setup": "npm install && typings install && npm link",
     "start": "bin/server.js",
     "test": "node_modules/.bin/mocha ./dist/test/index.js",
     "typescript-version": "tsc -v",
