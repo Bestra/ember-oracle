@@ -22,7 +22,9 @@ class ConfigFile {
             let dotInfo = JSON.parse(fs.readFileSync(dotFilePath, 'utf8'))
             console.log("addon paths found in config file:");
             console.log(dotInfo.addonPaths);
-            this.addonPaths = dotInfo.addonPaths;
-        } 
+            this.addonPaths = dotInfo.addonPaths.map(p => {
+                return path.resolve(dotFilePath, p);
+            });
+        }
     }
 }
