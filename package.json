@@ -13,7 +13,9 @@
     "test-watch": "node_modules/.bin/mocha --watch ./dist/test/index.js"
   },
   "bin": {
-    "ember-analyzer-start-server": "bin/server.js"
+    "ember-analyzer-start-server": "bin/server.js",
+    "ember-analyzer-call-server": "bin/cli"
+
   },
   "author": "",
   "license": "ISC",

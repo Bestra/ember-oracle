@@ -1,5 +1,5 @@
 function! EmberDef()
-  let def_command = "~/ember-analyzer/bin/cli"
+  let def_command = "ember-analyzer-call-server"
   let current_file = expand('%:p')
   let full_command = join([def_command, "define", current_file, line('.'), col('.'), expand("<cword>")], " ")
   let location = system(full_command)
@@ -22,7 +22,7 @@ function! EmberDef()
 endfunction
 
 function! EmberAlternate()
-  let command_path = "sh ~/ember-analyzer/bin/cli"
+  let command_path = "ember-analyzer-call-server"
   let current_file = expand('%:p')
   let full_command = join([command_path, "alternate", current_file], " ")
   let new_path = system(full_command)
@@ -35,7 +35,7 @@ function! EmberAlternate()
 endfunction
 
 function! EmberParents()
-  let command_path = "sh ~/ember-analyzer/bin/cli"
+  let command_path = "ember-analyzer-call-server"
   let current_file = expand('%:p')
   let full_command = join([command_path, "parents", current_file], " ")
   cgete system(full_command)
@@ -44,7 +44,7 @@ function! EmberParents()
 endfunction
 
 function! EmberCheckTemplate()
-  let command_path = "sh ~/ember-analyzer/bin/cli"
+  let command_path = "ember-analyzer-call-server"
   let current_file = expand('%:p')
   let full_command = join([command_path, "checkTemplate", current_file], " ")
   cgete system(full_command)
