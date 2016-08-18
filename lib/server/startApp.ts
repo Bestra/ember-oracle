@@ -7,9 +7,15 @@ import { ok } from 'assert'
 export default function init(rootPath: string, enginePaths: string[] = []) {
     ok(path.isAbsolute(rootPath), "root must be an absolute path");
     resolver.setRootPath(rootPath);
-    registry.registerAppModules();
-    new ConfigFile(rootPath).addonPaths.forEach(p => registry.registerModules(p, "pods"));
-    enginePaths.forEach(p => registry.registerModules(p, "pods"));
+    registry.registerModules(rootPath, "pods");
+    new ConfigFile(rootPath).addonPaths.forEach(p => {
+        console.log("registering modules in ", p)
+        registry.registerModules(p, "pods")
+    });
+    enginePaths.forEach(p => {
+        
+        registry.registerModules(p, "pods");
+    });
 }
 
 class ConfigFile {
@@ -17,7 +23,7 @@ class ConfigFile {
     constructor(rootPath: string) {
         let dotFilePath = path.join(rootPath, ".ember-analyzer");
         this.addonPaths = [];
-        console.log('looking for config file at ${dotFilePath}');
+        console.log(`looking for config file at ${dotFilePath}`);
         if (fs.existsSync(dotFilePath)) {
             let dotInfo = JSON.parse(fs.readFileSync(dotFilePath, 'utf8'))
             console.log("addon paths found in config file:");

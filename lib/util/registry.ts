@@ -49,6 +49,7 @@ export {registry};
  */
 export function registerPath(filePath: string, appRoot: string) {
     let moduleName = resolver.moduleNameFromPath(filePath, appRoot);
+    // console.log("registering ", filePath);
     registeredFiles[filePath] = moduleName;
     let [moduleType, modulePath] = moduleName.split(':');
     if (registry[moduleType]) {
@@ -65,35 +66,31 @@ export function registerPath(filePath: string, appRoot: string) {
     }
 }
 
-export function registerAppModules() {
-    let appPath = resolver.fullAppPath();
-    return registerModules(resolver.fullAppPath() + "/", resolver.podPrefix)
-}
-
 export function registerManually(moduleName, filePath) {
     registry['imports'][moduleName] = { filePath, definition: new EmberClass(moduleName, filePath) }
 }
 
 export function registerModules(rootPath, podPrefix) {
-    let appPath = rootPath;
+    let appPath = path.join(rootPath, "app");
 
-    let podPath = path.join(rootPath, podPrefix);
+    let podPath = path.join(appPath, podPrefix);
+    console.log("looking for files in ", podPath);
 
     let podModules = files.getFiles(podPath, ['.js', '.hbs']).map(p => registerPath(p, rootPath));
-    // console.log("    registered ", _.flatten(podModules).length, "modules in pods")
+    console.log("    registered ", _.flatten(podModules).length, "modules in pods")
 
     let otherModules = [];
     _.forEach(SUPPORTED_MODULES, (fileType, moduleName) => {
         let modulePath = path.join(appPath, moduleName + 's');
-        // console.log("looking for ", fileType, " files in ", modulePath)
+        console.log("looking for ", fileType, " files in ", modulePath)
         let foundFiles = files.getFiles(modulePath, [fileType]).map(p => registerPath(p, rootPath))
         // console.log(foundFiles)
         otherModules.push(foundFiles);
     });
-    // console.log("    registered ", _.flatten(otherModules).length, "other modules")
+    console.log("    registered ", _.flatten(otherModules).length, "other modules")
 
     let found = podModules.concat(_.flatten(otherModules));
-    // console.log("    registered ", found.length, "total modules")
+    console.log("    registered ", found.length, "total modules")
     return found;
 }
 
