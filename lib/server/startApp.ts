@@ -21,7 +21,7 @@ export default function init(rootPath: string, enginePaths: string[] = []) {
 class ConfigFile {
     addonPaths;
     constructor(rootPath: string) {
-        let dotFilePath = path.join(rootPath, ".ember-analyzer");
+        let dotFilePath = path.join(rootPath, ".ember-oracle");
         this.addonPaths = [];
         console.log(`looking for config file at ${dotFilePath}`);
         if (fs.existsSync(dotFilePath)) {

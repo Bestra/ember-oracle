@@ -1,8 +1,12 @@
 {
-  "name": "ember-analyzer",
+  "name": "ember-oracle",
   "version": "0.0.1",
   "description": "Utils for analyzing ember code",
   "main": "bin/server.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bestra/ember-oracle.git"
+  },
   "scripts": {
     "dev-setup": "npm install && typings install && npm link",
     "start": "bin/server.js",
@@ -13,8 +17,8 @@
     "test-watch": "node_modules/.bin/mocha --watch ./dist/test/index.js"
   },
   "bin": {
-    "ember-analyzer-start-server": "bin/server.js",
-    "ember-analyzer-call-server": "bin/cli"
+    "ember-oracle-start-server": "bin/server.js",
+    "ember-oracle-call-server": "bin/cli"
 
   },
   "author": "",
