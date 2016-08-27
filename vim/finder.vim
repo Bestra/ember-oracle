@@ -1,7 +1,8 @@
+let s:server_command = "ember-oracle-call-server"
+
 function! EmberDef()
-  let def_command = "ember-oracle-call-server"
   let current_file = expand('%:p')
-  let full_command = join([def_command, "define", current_file, line('.'), col('.'), expand("<cword>")], " ")
+  let full_command = join([s:server_command, "define", current_file, line('.'), col('.'), expand("<cword>")], " ")
   let location = system(full_command)
   echo location
   let segments = split(location, ":")
@@ -22,9 +23,8 @@ function! EmberDef()
 endfunction
 
 function! EmberAlternate()
-  let command_path = "ember-oracle-call-server"
   let current_file = expand('%:p')
-  let full_command = join([command_path, "alternate", current_file], " ")
+  let full_command = join([s:server_command, "alternate", current_file], " ")
   let new_path = system(full_command)
   echom new_path
   
@@ -35,23 +35,60 @@ function! EmberAlternate()
 endfunction
 
 function! EmberParents()
-  let command_path = "ember-oracle-call-server"
   let current_file = expand('%:p')
-  let full_command = join([command_path, "parents", current_file], " ")
+  let full_command = join([s:server_command, "parents", current_file], " ")
   cgete system(full_command)
   cope
 
 endfunction
 
 function! EmberCheckTemplate()
-  let command_path = "ember-oracle-call-server"
   let current_file = expand('%:p')
-  let full_command = join([command_path, "checkTemplate", current_file], " ")
+  let full_command = join([s:server_command, "checkTemplate", current_file], " ")
   cgete system(full_command)
   cope
 
 endfunction
 
+function! EmberInvokedAttr()
+  let current_file = expand('%:p')
+  let full_command = join([command-path, "invokedAttr", current_file, line('.'), col('.'), expand("<cword>")], " ")
+  cgete system(full_command)
+  cope
+
+endfunction
+
+function! EmberComponentNames(ArgLead, CmdLine, CursorPos)
+  let full_command = join([s:server_command, "moduleNames", "component"], " ")
+  return system(full_command)
+endfunction
+
+function! EmberTemplateNames(ArgLead, CmdLine, CursorPos)
+  let full_command = join([s:server_command, "moduleNames", "template"], " ")
+  return system(full_command)
+endfunction
+
+function! FindEmberComponent(componentName)
+  let component_module = join(["component", a:componentName], ":")
+  let full_command = join([s:server_command, "module", component_module], " ")
+
+  let new_path = system(full_command)
+  exec "edit ".new_path
+endfunction
+
+function! FindEmberTemplate(templateName)
+  let template_module = join(["template", a:templateName], ":")
+  let full_command = join([s:server_command, "module", template_module], " ")
+
+  let new_path = system(full_command)
+  exec "edit ".new_path
+endfunction
+
+
+command! -nargs=1 -complete=custom,EmberComponentNames EmberComponent call FindEmberComponent(<f-args>)
+command! -nargs=1 -complete=custom,EmberTemplateNames EmberTemplate call FindEmberTemplate(<f-args>)
+
 nnoremap <leader>fd :call EmberDef()<cr>
 nnoremap <leader>fa :call EmberAlternate()<cr>
 nnoremap <leader>fp :call EmberParents()<cr>
+nnoremap <leader>fi :call EmberInvokedAttr()<cr>

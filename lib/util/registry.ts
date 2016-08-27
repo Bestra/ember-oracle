@@ -149,3 +149,9 @@ export function fileContents(moduleName: string) {
 export function allModules(type: string) {
     return registry[type];
 }
+
+export function moduleNames(type: string) {
+    return _.map(allModules(type), (val, key) => {
+        return val.definition.moduleName.split(':')[1];
+    });
+}

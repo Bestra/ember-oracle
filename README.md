@@ -30,12 +30,18 @@ You'll probably need node v5.x or higher
 
 
 ###Commands to run in hbs templates
-- `<leader>fa` will switch between a template and its rendering context.
+- `<leader>fa` will switch between a template and its rendering context, either a component or a controller.
 ie, `app/pods/foo/controller.js` -> `app/pods/foo/template.hbs`
 - `<leader>fd` on a bound variable or closure action will jump to its definition in the template's rendering context.  This includes
 methods defined in mixins and superclasses.
 - `<leader>fd` on a component name will jump to the template file for that component
 - `<leader>fp` in a component template will open a quickfix list of places that component is invoked
+
+####Finding files
+`:EmberComponent` and `:EmberTemplate` commands will let you open component definitions and general templates.
+Both commands will autocomplete their arguments.  For example if the project has `util/calendar` and `util/datepicker` components,
+typing `:EmberComponent util/<Tab>` will show both items.  Component templates will be under `:EmberTemplate components/` for the
+time being.  
 
 ##Other fun stuff
 Go to `localhost:5300/graph.svg` to see a clickable graph of all the component invocations in the app.

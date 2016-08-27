@@ -3,10 +3,10 @@
 case "$1" in
   define)
     curl -s -G "localhost:5300/templates/definition" \
-    --data-urlencode "name=$5" \
-    --data-urlencode "column=$4" \
-    --data-urlencode "line=$3" \
     --data-urlencode "path=$2" \
+    --data-urlencode "line=$3" \
+    --data-urlencode "column=$4" \
+    --data-urlencode "name=$5" \
     --data-urlencode "format=compact"
     ;;
   alternate)
@@ -19,9 +19,26 @@ case "$1" in
       --data-urlencode "path=$2" \
       --data-urlencode "format=compact"
     ;;
+  invokedAttr)
+    curl -s -G "localhost:5300/templates/invokedAttr" \
+      --data-urlencode "path=$2" \
+      --data-urlencode "line=$3" \
+      --data-urlencode "column=$4" \
+      --data-urlencode "format=compact"
+    ;;
   checkTemplate)
     curl -s -G "localhost:5300/templates/check" \
       --data-urlencode "path=$2" \
+      --data-urlencode "format=compact"
+    ;;
+  moduleNames)
+    curl -s -G "localhost:5300/modules" \
+      --data-urlencode "type=$2" \
+      --data-urlencode "format=compact"
+    ;;
+  module)
+    curl -s -G "localhost:5300/module" \
+      --data-urlencode "moduleName=$2" \
       --data-urlencode "format=compact"
     ;;
 esac

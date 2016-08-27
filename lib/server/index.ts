@@ -45,6 +45,17 @@ export default function start(appPath: string, enginePaths: string[]) {
         ctx.body = registry.lookup(associated).filePath;
     });
 
+    router.get('/modules', function (ctx, next) {
+        let type = ctx.query.type;
+        ctx.body = registry.moduleNames(type).join('\n');
+    });
+
+    router.get('/module', function (ctx, next) {
+        let moduleName = ctx.query.moduleName;
+        console.log("looking up filepath for module ", moduleName);
+        ctx.body = registry.lookup(moduleName).definition.filePath;
+    });
+
     router.get('/templates/definition', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);
