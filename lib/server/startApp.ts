@@ -4,8 +4,9 @@ import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
 import { ok } from 'assert'
 
-export default function init(rootPath: string, enginePaths: string[] = []) {
-    ok(path.isAbsolute(rootPath), "root must be an absolute path");
+export default function init(aPath: string, enginePaths: string[] = []) {
+    let rootPath = path.resolve(aPath);
+    console.log("Running ember-oracle on ", rootPath);
     resolver.setRootPath(rootPath);
     registry.registerModules(rootPath, "pods");
     new ConfigFile(rootPath).addonPaths.forEach(p => {
