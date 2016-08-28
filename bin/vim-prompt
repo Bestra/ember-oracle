@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "*****Thanks for installing ember-oracle!*******"
+echo "You'll want to source the ember-oracle.vim file in your vimrc."
+echo "It's located here: " $(pwd)/vim/ember-oracle.vim
+echo "A pathogen-compatible version is coming soon."

@@ -1,12 +1,17 @@
 #Ember Oracle
 
+
 ##What is it?
 - A nodejs server that reads your ember cli project and sets up a graph of component invocations
 - A vim plugin that lets you navigate hbs templates and js files.
 
-##Install the vim plugin
+##Install and run the node server
+You'll probably need node v5.x or higher
+- `npm install -g ember-oracle`
+- `ember-oracle-start-server $YOUR_EMBER_APP`
 
-For now you'll want to source `vim/finder.vim` in your `.vimrc`
+##Install the vim plugin
+For now you'll want to source `ember-oracle.vim` in your `.vimrc`
 `source ~/ember-oracle/vim/finder.vim`
 
 ##Create a config file in your project (optional)
@@ -22,12 +27,6 @@ It's a JSON file that only has one key for `addonPaths`.  Here's an example.
 
 If you're not referencing an in-repo addon this is optional.  Support for
 traditional addons is coming...later.
-
-##Install and run the node server
-You'll probably need node v5.x or higher
-- `npm run dev-setup`
-- `ember-oracle-start-server $YOUR_EMBER_APP`
-
 
 ###Commands to run in hbs templates
 - `<leader>fa` will switch between a template and its rendering context, either a component or a controller.
@@ -45,3 +44,20 @@ time being.
 
 ##Other fun stuff
 Go to `localhost:5300/graph.svg` to see a clickable graph of all the component invocations in the app.
+The left side of each node is a list of the props declared in the rendering context
+for a given template.  The right side is a list of paths (bound variables) referenced
+in the template itself.  The graph has a few issues with self-referencing components at
+the moment.
+
+##Current quirks
+- You'll have to restart the server when files change.
+- If the server can't find the definition for term you'll
+hopefully get a message saying so.
+
+##Development
+ember-oracle is written in typescript.  If you check out the 
+git repo you can run `npm run dev-setup` to install typescript
+and make a build.  Please forgive the messiness of the initial development! I'd never
+done anything like this previously. 
+
+
