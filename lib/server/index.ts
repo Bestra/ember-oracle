@@ -92,6 +92,27 @@ export default function start(appPath: string, enginePaths: string[]) {
             ctx.body = JSON.stringify(parents);
         }
     });
+
+    router.get('/templates/invokedAttr', function (ctx, next) {
+        console.log(ctx.query);
+        let findAttrs = (templateModule: string, attrName: string) => {
+            let m = registry.lookupModuleName(templateModule);
+            let context = resolver.templateContext(m);
+            let caller = registry.lookup(context) ? context : m;
+            console.log("looking up parents for ", caller)
+            return callGraph.invocations(caller, attrName);
+        }
+        
+        let fullPath = path.resolve(ctx.query.path);
+
+        let parents = findAttrs(fullPath, ctx.query.attr);
+        if (ctx.query.format === "compact") {
+            ctx.body = parents.join('\n');
+        } else {
+            ctx.body = JSON.stringify(parents);
+        }
+    });
+
     router.get('/templates/check', function (ctx, next) {
         console.log(ctx.query);
         let fullPath = path.resolve(ctx.query.path);

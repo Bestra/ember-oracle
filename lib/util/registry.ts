@@ -28,7 +28,7 @@ interface Dict<T> {
     [index: string]: T
 }
 
-type RegistryEntry = { filePath; definition };
+type RegistryEntry = { filePath; definition; };
 type RegistryType = Dict<RegistryEntry>;
 
 let registry: Dict<RegistryType> = {

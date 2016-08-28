@@ -16,8 +16,29 @@ type FilePosition = { filePath: string; position: Position };
 interface Dict<T> {
     [index: string]: T
 }
+
+/**
+ * Defineable things have a `definedAt`, the position of their definition in the rendering context,
+ * and `invokedWith`, a possible list of positions where the value was passed into
+ * the rendering context
+ */
 export interface Defineable {
     definedAt: FilePosition;
+    invokedWith: FilePosition[];
+}
+
+export interface TemplateInvocation {
+    invokedAt:
+    {
+        filePath: string,
+        position: Position
+    }
+    astNode: htmlBars.ASTNode;
+    invokedAttr: (attrName: string) => string;
+    templateModule: string;
+    moduleName: string;
+    isPartial: boolean;
+    props: {}
 }
 
 class NullPosition implements Defineable {
@@ -35,6 +56,8 @@ class NullPosition implements Defineable {
             position: this.position
         }
     }
+
+    get invokedWith() { return []; }
 }
 
 class TemplateMember<T> implements Defineable {
@@ -49,8 +72,15 @@ class TemplateMember<T> implements Defineable {
     get definedAt() {
         return null;
     }
+
+    get invokedWith() {
+        return [];
+    }
 }
 
+/**
+ * A mustache is anything inside {{}}
+ */
 export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
 {
     get pathString() {
@@ -66,6 +96,9 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
     }
 }
 
+/**
+ * {{partial "foo"}}
+ */
 export class Partial extends Mustache implements TemplateInvocation {
     get templateModule() {
         return 'template:' + this.templatePath;
@@ -73,7 +106,7 @@ export class Partial extends Mustache implements TemplateInvocation {
     get isPartial() {
         return true
     }
-    
+
     get moduleName() {
         return this.templateModule;
     }
@@ -87,7 +120,7 @@ export class Partial extends Mustache implements TemplateInvocation {
         let m = lookup(this.templateModule);
         return m && m.filePath;
     }
-    
+
     get props() {
         return {};
     }
@@ -99,6 +132,10 @@ export class Partial extends Mustache implements TemplateInvocation {
         }
     }
 
+    invokedAttr(s) {
+        return "";
+    }
+
     get definedAt() {
         let filePath = this.templateFilePath;
         return {
@@ -108,6 +145,11 @@ export class Partial extends Mustache implements TemplateInvocation {
     }
 }
 
+/**
+ * {{#my-block as |param|}}
+ * 
+ * {{/my-block}}
+ */
 export class Block extends Mustache {
     astNode: htmlBars.BlockStatement;
 
@@ -121,20 +163,6 @@ export class Block extends Mustache {
             position: this.astNode.loc.start
         }
     }
-}
-
-export interface TemplateInvocation {
-    invokedAt:
-    {
-        filePath: string,
-        position: Position
-    }
-    astNode: htmlBars.ASTNode;
-
-    templateModule: string;
-    moduleName: string;
-    isPartial: boolean;
-    props: {}
 }
 
 export class ComponentInvocation extends Block implements TemplateInvocation {
@@ -151,13 +179,12 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
         let pairs = _.map(this.astNode.hash.pairs, (p) => {
             return [p.key, p.value]
         });
-        return _.fromPairs(pairs);
+        return (_.fromPairs(pairs) as any) as Dict<htmlBars.Param>;
     }
-    
+
     get isPartial() {
         return false
     }
-
 
     get moduleName() {
         return 'component:' + this.pathString;
@@ -172,6 +199,10 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
             filePath: lookup(this.containingTemplate.moduleName).filePath,
             position: this.astNode.loc.start
         }
+    }
+
+    invokedAttr(attrName: string): string {
+        return htmlBars.print(this.props[attrName]);
     }
 
     get definedAt() {
@@ -203,7 +234,7 @@ export class Action extends TemplateMember<htmlBars.Callable> {
         )
 
         let context = lookup(contextModule).definition as ember.EmberClass
-        console.log(`looking up ${this.name} action from ${_.keys(context.actions)}`) 
+        console.log(`looking up ${this.name} action from ${_.keys(context.actions)}`)
         let action = context.actions[this.name]
 
         return {
@@ -219,6 +250,7 @@ export class Action extends TemplateMember<htmlBars.Callable> {
 
 }
 
+
 export class Path extends TemplateMember<htmlBars.PathExpression> {
     astNode: htmlBars.PathExpression;
 
@@ -233,7 +265,7 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
 
         let context = lookup(contextModule).definition as ember.EmberClass
         let prop = context.properties[this.root];
-      
+
         return {
             filePath: prop.filePath,
             position: prop.position
@@ -277,6 +309,11 @@ class NoContext {
         this.moduleName = moduleName;
     }
 }
+
+/**
+ * Template is the represenation of a .hbs file.
+ * Every template has a rendering context, even if it's an implicit one.
+ */
 export class Template {
     moduleName: string;
     filePath: string;
@@ -335,7 +372,13 @@ export class Template {
         return this._cache;
     }
 
-    get props() {
+    /**
+     * A 'prop' is the root value of any path present in the template.
+     * {{foo.bar}} and {{foo.baz}} are both paths with a root of 'foo',
+     * and the prop will serve as a bucket for both of them.
+     * foo: ['foo.bar', 'foo.baz']
+     */
+    get props(): Dict<string[]> {
         let isHelper = (n) => {
             if (n.type === "SubExpression" ||
                 n.type === "MustacheStatement" ||
@@ -368,7 +411,7 @@ export class Template {
 
             accum[p.root].push(p.astNode.original);
             return accum;
-        }, {})
+        }, {} as Dict<string[]>);
 
     }
 
@@ -396,7 +439,7 @@ export class Template {
                 return accum
             }, {});
     }
- 
+
     get invocations(): TemplateInvocation[] {
         return [].concat(this.partials, this.components);
     }
@@ -425,7 +468,7 @@ export class Template {
                 }
             });
     }
- 
+
     _astNode: htmlBars.Program;
     get astNode() {
         if (this._astNode) { return this._astNode }

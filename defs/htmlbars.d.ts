@@ -5,6 +5,7 @@
    */
 declare module 'htmlbars/dist/cjs/htmlbars-syntax' {
     export function parse(foo): Program;
+    export function print(foo): string;
     export function traverse(node: ASTNode, visitor: any);
 
     export function enter<T>(node: T): void;
