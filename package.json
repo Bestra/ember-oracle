@@ -1,6 +1,6 @@
 {
   "name": "ember-oracle",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A server for navigating an ember-cli codebase",
   "main": "dist/bin/server.js",
   "repository": {
@@ -21,7 +21,12 @@
     "ember-oracle-start-server": "dist/bin/server.js",
     "ember-oracle-call-server": "scripts/cli"
   },
-  "files": ["dist", "vim", "scripts", "README.md"],
+  "files": [
+    "dist",
+    "vim",
+    "scripts",
+    "README.md"
+  ],
   "author": "Chris Westra <cwestra@gmail.com> https://github.com/bestra",
   "license": "ISC",
   "dependencies": {
