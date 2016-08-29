@@ -7,12 +7,14 @@
 
 ##Install and run the node server
 You'll probably need node v5.x or higher
-- `npm install -g ember-oracle`
-- `ember-oracle-start-server $YOUR_EMBER_APP`
+- `npm install -g ember-oracle`  The install will print the path of the `ember-oracle.vim` file that
+you'll need to source.
+- `ember-oracle-start-server $YOUR_EMBER_APP`, where `$YOUR_EMBER_APP` is the root of your ember-cli project.  You'll see some gratuitious console output.
 
 ##Install the vim plugin
 For now you'll want to source `ember-oracle.vim` in your `.vimrc`
-`source ~/ember-oracle/vim/finder.vim`
+`source /usr/local/lib/node_modules/ember-oracle/vim/ember-oracle.vim`
+
 
 ##Create a config file in your project (optional)
 
