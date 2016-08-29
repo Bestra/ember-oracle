@@ -8,9 +8,8 @@
     "url": "https://github.com/bestra/ember-oracle.git"
   },
   "scripts": {
-    "dev-setup": "npm install && typings install && npm link",
-    "prepublish": "npm run build && cp bin/cli dist/bin/cli && cp bin/vim-prompt dist/bin/vim-prompt",
-    "postinstall": "dist/bin/vim-prompt",
+    "prepublish": "typings install && npm run build",
+    "postinstall": "scripts/vim-prompt",
     "start": "dist/bin/server.js",
     "test": "node_modules/.bin/mocha ./dist/test/index.js",
     "typescript-version": "tsc -v",
@@ -20,9 +19,9 @@
   },
   "bin": {
     "ember-oracle-start-server": "dist/bin/server.js",
-    "ember-oracle-call-server": "dist/bin/cli"
+    "ember-oracle-call-server": "scripts/cli"
   },
-  "files": ["dist", "vim", "README.md"],
+  "files": ["dist", "vim", "scripts", "README.md"],
   "author": "Chris Westra <cwestra@gmail.com> https://github.com/bestra",
   "license": "ISC",
   "dependencies": {

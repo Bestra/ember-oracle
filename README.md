@@ -58,7 +58,7 @@ hopefully get a message saying so.
 
 ##Development
 ember-oracle is written in typescript.  If you check out the 
-git repo you can run `npm run dev-setup` to install typescript
+git repo you can run `npm install` locally to install typescript
 and make a build.  Please forgive the messiness of the initial development! I'd never
 done anything like this previously. 
 
