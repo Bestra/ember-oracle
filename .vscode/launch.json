@@ -5,7 +5,7 @@
 			"name": "Server",
 			"type": "node",
 			"request": "launch",
-			"program": "${workspaceRoot}/bin/server.js",
+			"program": "${workspaceRoot}/dist/bin/server.js",
 			"stopOnEntry": false,
 			"args": ["/Users/bestra/mh/tahi/client/"
 			],
