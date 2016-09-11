@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import * as ember from '../ember'
 import * as resolver from '../util/resolver'
 import { findComponent, lookup, fileContents } from '../util/registry'
+import * as callGraph from '../util/callGraph'
 import * as _ from 'lodash'
 import {
     containsPosition,
@@ -202,7 +203,12 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
     }
 
     invokedAttr(attrName: string): string {
-        return htmlBars.print(this.props[attrName]);
+        let printedAttr = htmlBars.print(this.props[attrName]);
+        if (printedAttr) {
+            return `${attrName}=${printedAttr}`
+        } else {
+            return `(${attrName} not provided)`
+        }
     }
 
     get definedAt() {
@@ -256,6 +262,11 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
 
     get root() {
         return this.astNode.parts[0];
+    }
+
+    get invokedWith() {
+
+        return [];
     }
 
     get definedAt() {

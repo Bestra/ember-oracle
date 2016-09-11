@@ -52,7 +52,8 @@ endfunction
 
 function! EmberInvokedAttr()
   let current_file = expand('%:p')
-  let full_command = join([command-path, "invokedAttr", current_file, line('.'), col('.'), expand("<cword>")], " ")
+  let full_command = join([s:server_command, "invokedAttr", current_file, line('.'), col('.'), expand("<cword>")], " ")
+  echo full_command
   cgete system(full_command)
   cope
 
