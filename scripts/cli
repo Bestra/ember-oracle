@@ -6,7 +6,7 @@ case "$1" in
     --data-urlencode "path=$2" \
     --data-urlencode "line=$3" \
     --data-urlencode "column=$4" \
-    --data-urlencode "name=$5" \
+    --data-urlencode "attr=$5" \
     --data-urlencode "format=compact"
     ;;
   alternate)

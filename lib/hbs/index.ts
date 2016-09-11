@@ -276,11 +276,15 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
 
         let context = lookup(contextModule).definition as ember.EmberClass
         let prop = context.properties[this.root];
+        if (prop) {
+            return {
+                filePath: prop.filePath,
+                position: prop.position
 
-        return {
-            filePath: prop.filePath,
-            position: prop.position
+            }
 
+        } else {
+            return null;
         }
     }
 }

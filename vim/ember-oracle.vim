@@ -1,23 +1,31 @@
 let s:server_command = "ember-oracle-call-server"
 
+function! JumpToFile(locationStr)
+  let segments = split(a:locationStr, ":")
+
+  let current_file = expand('%:p')
+
+  if current_file !=? segments[0]
+    exec "edit ".segments[0]
+  endif
+  
+  if len(segments) > 1
+    call cursor(segments[1], segments[2])
+  else
+    echom "No position in the file was found"
+  endif
+endfunction
+
 function! EmberDef()
   let current_file = expand('%:p')
   let full_command = join([s:server_command, "define", current_file, line('.'), col('.'), expand("<cword>")], " ")
-  let location = system(full_command)
-  echo location
-  let segments = split(location, ":")
+  let locations = split(system(full_command), "\n")
 
-  let new_path = segments[0]
-  if current_file !=? new_path
-    exec "edit ".new_path
-  endif
-
-  if len(segments) > 1
-    let line = segments[1]
-    let column = segments[2]
-    call cursor(line, column)
+  if len(locations) > 1
+    cgete locations
   else
-    echom "No position in the file was found"
+    echo locations[0]
+    call JumpToFile(locations[0])
   endif
 
 endfunction

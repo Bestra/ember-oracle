@@ -63,26 +63,46 @@ export default function start(appPath: string, enginePaths: string[]) {
 
         let queryPosition = { line: parseInt(ctx.query.line), column: parseInt(ctx.query.column) };
         let defineable = template.parsePosition(queryPosition);
-        let position = defineable.definedAt
+        let position = defineable.definedAt;
+        let invokedAttrs = callGraph.invocations(
+            resolver.templateContext(template.moduleName),
+            ctx.query.attr
+        ).filter((a) => { return !a.match(/not provided/) });
+
         console.log("found position: ", JSON.stringify(position))
         if (ctx.query.format === "compact") {
-            ctx.body = [position.filePath, position.position.line, position.position.column].join(':');
+            if (position) {
+                let definitionPosition = [position.filePath, position.position.line, position.position.column].join(':');
+                ctx.body = [definitionPosition, ...invokedAttrs].join('\n');
+            } else {
+                ctx.body = invokedAttrs.join('\n');
+            }
         } else {
             ctx.body = JSON.stringify(position);
         }
     });
 
+    let findContextModule = (filePath: string) => {
+        let m = registry.lookupModuleName(filePath);
+        let contextModule = resolver.templateContext(m);
+        return registry.lookup(contextModule) ? contextModule : m;
+    }
+
+    let findAttrs = (templateFilePath: string, attrName: string) => {
+        let m = findContextModule(templateFilePath);
+        console.log("looking up parents for ", m)
+        return callGraph.invocations(m, attrName);
+    }
+
+    let findParents = (templateFilePath: string) => {
+        let m = findContextModule(templateFilePath);
+        console.log("looking up attrs for ", m)
+        return callGraph.parentTemplates(m);
+    }
+
     router.get('/templates/parents', function (ctx, next) {
         console.log(ctx.query);
         // TODO: change callgraph to work off templates first rather than context
-        let findParents = (templateModule: string) => {
-            let m = registry.lookupModuleName(templateModule);
-            let context = resolver.templateContext(m);
-            let caller = registry.lookup(context) ? context : m;
-            console.log("looking up parents for ", caller)
-            return callGraph.parentTemplates(caller);
-        }
-        
         let fullPath = path.resolve(ctx.query.path);
 
         let parents = findParents(fullPath);
@@ -95,16 +115,8 @@ export default function start(appPath: string, enginePaths: string[]) {
 
     router.get('/templates/invokedAttr', function (ctx, next) {
         console.log(ctx.query);
-        let findAttrs = (templateModule: string, attrName: string) => {
-            let m = registry.lookupModuleName(templateModule);
-            let context = resolver.templateContext(m);
-            let caller = registry.lookup(context) ? context : m;
-            console.log("looking up parents for ", caller)
-            return callGraph.invocations(caller, attrName);
-        }
-        
-        let fullPath = path.resolve(ctx.query.path);
 
+        let fullPath = path.resolve(ctx.query.path);
         let parents = findAttrs(fullPath, ctx.query.attr);
         if (ctx.query.format === "compact") {
             ctx.body = parents.join('\n');
