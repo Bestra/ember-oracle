@@ -2,7 +2,7 @@ import * as Koa from 'koa'
 import * as Router from "koa-router";
 import * as path from 'path';
 import * as childProcess from 'child_process';
-
+import * as fs from 'fs';
 import * as resolver from '../util/resolver'
 import * as registry from '../util/registry'
 import * as callGraph from '../util/callGraph'
@@ -72,7 +72,15 @@ export default function start(appPath: string, enginePaths: string[]) {
         console.log("found position: ", JSON.stringify(position))
         if (ctx.query.format === "compact") {
             if (position) {
-                let definitionPosition = [position.filePath, position.position.line, position.position.column].join(':');
+                let definitionFile = fs.readFileSync(position.filePath, 'utf8');
+                let defLine;
+                if (position.position.line > 0) {
+                    let lines = definitionFile.split('\n');
+                    defLine = lines[position.position.line - 1].replace(':', '\:');
+                } else {
+                    defLine = "";
+                }
+                let definitionPosition = [position.filePath, position.position.line, position.position.column, defLine].join(':');
                 ctx.body = [definitionPosition, ...invokedAttrs].join('\n');
             } else {
                 ctx.body = invokedAttrs.join('\n');
