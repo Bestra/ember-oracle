@@ -8,7 +8,7 @@
     "url": "https://github.com/bestra/ember-oracle.git"
   },
   "scripts": {
-    "prepublish": "typings install && npm run build",
+    "prepublish": "npm run build",
     "postinstall": "scripts/vim-prompt",
     "start": "dist/bin/server.js",
     "test": "node_modules/.bin/mocha ./dist/test/index.js",
@@ -40,9 +40,15 @@
     "walk-sync": "^0.2.6"
   },
   "devDependencies": {
+    "@types/estree": "0.0.34",
+    "@types/koa": "0.0.0",
+    "@types/koa-router": "^7.0.21",
+    "@types/lodash": "^4.14.41",
+    "@types/mocha": "^2.2.33",
+    "@types/node": "0.0.2",
+    "@types/progress": "^1.1.28",
     "mocha": "^2.4.5",
     "testdouble": "^1.4.1",
-    "typescript": "1.8.10",
-    "typings": "1.0.4"
+    "typescript": "^2.0.10"
   }
 }
