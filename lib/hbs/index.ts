@@ -24,7 +24,7 @@ interface Dict<T> {
  * the rendering context
  */
 export interface Defineable {
-    definedAt: FilePosition;
+    definedAt: FilePosition | null;
     invokedWith: FilePosition[];
 }
 
@@ -70,7 +70,7 @@ class TemplateMember<T> implements Defineable {
         this.astNode = node;
     }
 
-    get definedAt() {
+    get definedAt(): FilePosition | null {
         return null;
     }
 
@@ -94,6 +94,9 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
 
     get params() {
         return this.astNode.params;
+    }
+     get definedAt(): FilePosition | null {
+        return null;
     }
 }
 
@@ -456,14 +459,13 @@ export class Template {
     }
 
     get invocations(): TemplateInvocation[] {
-        return [].concat(this.partials, this.components);
+        let arr: TemplateInvocation[] = [];
+        return arr.concat(this.partials, this.components);
     }
     get components() {
-        let blockComponents = _(this.blocks).map((block) => {
-            if (block instanceof ComponentInvocation) {
-                return block;
-            }
-        }).compact().value();
+        let blockComponents = _.filter(this.blocks, (block) => {
+          return (block instanceof ComponentInvocation);
+        }) as ComponentInvocation[];
 
         let mustacheComponents =
             (this.cachedNodes['MustacheStatement'])
@@ -499,7 +501,7 @@ export class Template {
         return yieldNode.params[index].loc.start;
     }
 
-    blockParamFromPath(path: Path): BlockParam {
+    blockParamFromPath(path: Path): BlockParam | null {
         let foundBlock = _.find(this.blocks, (block => {
             return containsPosition(block.astNode, path.astNode.loc.start) &&
                 block.blockParams.indexOf(path.root) > -1

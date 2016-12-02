@@ -84,7 +84,7 @@ function createNode(templateModule: string, isPartial: boolean) {
     let contextModule = resolver.templateContext(templateModule);
 
     let template;
-    let templateDef: Template;
+    let templateDef: Template | null = null;
     if (registry.lookup(templateModule)) {
         templateDef = registry.lookup(templateModule).definition as Template;
         template = {

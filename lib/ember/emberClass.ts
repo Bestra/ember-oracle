@@ -99,7 +99,7 @@ export default class EmberClass {
     moduleName: string;
     filePath: string;
 
-    get superClass(): EmberClass {
+    get superClass(): EmberClass | null {
         return extractSuperClass(this.ast);
     }
     get mixins(): EmberClass[] {
@@ -116,20 +116,23 @@ export default class EmberClass {
     }
 
     get properties(): Dict<Property> {
-        let superProps = this.superClass.properties;
+        let superProps = this.superClass ? this.superClass.properties : {};
         let mixinProps = this.mixins.map(m => m.properties);
         // console.log("super props are ", _.keys(superProps))
         let localProps = extractProps(this.ast, this);
-        return _.assign<Dict<Property>, Dict<Property>>({}, superProps, ...mixinProps, localProps);
+        let emptyDict: Dict<Property> = {};
+        
+        return _.assign<Dict<Property>>({}, superProps, ...mixinProps, localProps)         
+        
     }
 
     get actions(): Dict<Action> {
-        let superActions = this.superClass.actions;
+        let superActions = this.superClass ? this.superClass.actions : {};
         let mixinActions = this.mixins.map(m => m.actions);
 
         // console.log("super actions are ", _.keys(superActions))
         let localActions = extractActions(this.ast, this);
-        return _.assign<Dict<Action>, Dict<Action>>({}, superActions, ...mixinActions, localActions);
+        return _.assign<Dict<Action>>({}, superActions, ...mixinActions, localActions);
     }
 
     constructor(moduleName, filePath) {

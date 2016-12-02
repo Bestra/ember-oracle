@@ -11,6 +11,8 @@ function startsWithin(line: number, column: number, container: htmlBars.Position
         } else {
             return false;
         }
+    } else {
+        return false;
     }
 }
 
@@ -24,6 +26,8 @@ function endsWithin(line, column, container: htmlBars.Position) {
         } else {
             return false;
         }
+    } else {
+        return false;
     }
 }
 

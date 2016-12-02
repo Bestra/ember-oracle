@@ -42,7 +42,11 @@ export default function start(appPath: string, enginePaths: string[]) {
         console.log("looking up alternate for module ", moduleName)
 
         let associated = resolver.alternateModule(moduleName);
-        ctx.body = registry.lookup(associated).filePath;
+        if (associated) {
+            ctx.body = registry.lookup(associated).filePath;
+        } else {
+            ctx.body = "No alternate found"
+        }
     });
 
     router.get('/modules', function (ctx, next) {

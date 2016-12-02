@@ -79,7 +79,7 @@ export function registerModules(rootPath, podPrefix) {
     let podModules = files.getFiles(podPath, ['.js', '.hbs']).map(p => registerPath(p, rootPath));
     console.log("    registered ", _.flatten(podModules).length, "modules in pods")
 
-    let otherModules = [];
+    let otherModules: any[] = [];
     _.forEach(SUPPORTED_MODULES, (fileType, moduleName) => {
         let modulePath = path.join(appPath, moduleName + 's');
         console.log("looking for ", fileType, " files in ", modulePath)

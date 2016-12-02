@@ -1,5 +1,6 @@
 import * as recast from 'recast'
 import * as _ from 'lodash'
+import * as ESTree from 'estree'
 
 import { lookup, fileContents, lookupByAppPath } from '../util/registry'
 type Position = { line: number; column: number }
@@ -46,7 +47,7 @@ export function rootIdentifier(memberExpr: any) {
 }
 
 export function superClassIdentifier(ast) {
-    let name: string;
+    let name: string | null = null;
     recast.visit(ast, {
         visitExportDefaultDeclaration: function ({node: {declaration}}) {
             if (declaration.callee) {
@@ -62,7 +63,7 @@ export function superClassIdentifier(ast) {
 }
 
 export function extractMixinIdentifiers(ast): string[] {
-    let mixinArgs: any[];
+    let mixinArgs: any[] = [];
 
     recast.visit(ast, {
         visitExportDefaultDeclaration: function ({node: {declaration}}) {
@@ -82,8 +83,8 @@ export function extractMixinIdentifiers(ast): string[] {
         .value();
 }
 
-export function findImportPathForIdentifier(ast, name: string): string {
-    let importPath = null;
+export function findImportPathForIdentifier(ast, name: string): string | null {
+    let importPath: string | null = null;
     recast.visit(ast, {
         //for some reason the nodePath here conforms to a different spec than the other
         //paths, hence the funny business

@@ -1,15 +1,17 @@
 import * as recast from 'recast'
 import * as _ from 'lodash'
+import * as ESTree from 'estree'
 
 interface RouteNode {
-    parent: RouteNode;
-    children: RouteNode[];
+    node: any;
+    parent: RouteNode | null;
+    children: RouteNode[] | null;
     moduleName: string;
     name: string;
 }
 
 function findChildRoutes(routeFnNode: ESTree.FunctionExpression, parentRoute) {
-    let routeNodes = [];
+    let routeNodes: any[] = [];
     let isRoute = _.matches(
         {
             callee: {
@@ -30,7 +32,7 @@ function findChildRoutes(routeFnNode: ESTree.FunctionExpression, parentRoute) {
     });
 
     return routeNodes.map((routeCallNode) => {
-        let child = {
+        let child: RouteNode = {
             node: routeCallNode,
             parent: parentRoute,
             children: [],
@@ -65,7 +67,7 @@ export default function findRoutes(routerAst): RouteNode {
         }
     });
 
-    let appRoute = {
+    let appRoute: RouteNode = {
         node: routeFn,
         parent: null,
         children: null,
