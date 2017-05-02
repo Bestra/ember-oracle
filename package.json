@@ -49,6 +49,6 @@
     "@types/progress": "^1.1.28",
     "mocha": "^2.4.5",
     "testdouble": "^1.4.1",
-    "typescript": "^2.0.10"
+    "typescript": "^2.3"
   }
 }
