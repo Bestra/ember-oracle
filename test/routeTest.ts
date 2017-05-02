@@ -21,9 +21,13 @@ describe('the route tree', function () {
         it('has a top application route and children', function () {
             let root = findRoutes(ast);
             assert.equal(root.name, 'application')
-            assert.equal(root.children.length, 2)
+            assert.ok(root.children);
+            if (root.children) {
+                assert.equal(root.children.length, 2);
             let dashboardRoute = root.children[0];
-            assert.equal(dashboardRoute.children.length, 1)
+            assert.equal(dashboardRoute.children!.length, 1);
+            }
+            
         })
 
         it('the application route has the "application" module');

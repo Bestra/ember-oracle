@@ -47,7 +47,7 @@ function extractProps(ast, parent: EmberClass) {
 
 function extractActions(ast, parent: EmberClass) {
     let dict: Dict<Action> = {};
-    let actionsHash: any = _.find(AST.defaultExportProps(ast), { key: { name: "actions" } });
+    let actionsHash: any = _.find(AST.defaultExportProps(ast), { key: { name: "actions", type: "Identifier" } });
     if (actionsHash) {
         actionsHash.value.properties.forEach((p) => {
             let a = new Action(p, parent);
