@@ -3,7 +3,7 @@ export default function transformer(file, api) {
   const {expression, statement, statements} = j.template;
 
   return j(file.source)
-    .find(j.CallExpression, {callee: {object: {name: "server"}, 
+    .find(j.CallExpression, {callee: {object: {name: "server"},
                                       property:{name: "respondWith"}}})
     .replaceWith(p => {
       let [requestType, requestPath, responseArgs] = p.value.arguments;
@@ -13,27 +13,27 @@ export default function transformer(file, api) {
       let stringifyFilter = {
         callee: {object: {name: "JSON"}, property: {name: "stringify"}}
       }
-      
+
       let newResponse;
       if (j.match(responseText, stringifyFilter)) {
         newResponse = responseText.arguments;
       } else {
-        newResponse = responseText; 
+        newResponse = responseText;
       }
-    
+
       if (status.value === 204 || status.value === 201) {
         return expression`$.mockjax({type: ${requestType},
-                                   path: ${requestPath},
-                                   status: ${status}                               
-                                  })`;
+                            url: ${requestPath},
+                            status: ${status}
+                          })`;
       } else {
         return expression`$.mockjax({type: ${requestType},
-                                   path: ${requestPath},
-                                   status: ${status},
-                                   responseText: ${newResponse}
-                                  })`;
+                            url: ${requestPath},
+                            status: ${status},
+                            responseText: ${newResponse}
+                          })`;
       }
-      
+
     })
     .toSource();
 };
