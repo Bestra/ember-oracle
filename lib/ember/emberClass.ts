@@ -5,7 +5,7 @@ import * as _ from 'lodash'
 import { parseJs } from '../util/parser'
 
 import * as AST from '../ember/ast'
-import { lookup, fileContents, lookupByAppPath } from '../util/registry'
+import Registry from '../util/registry'
 type Position = { line: number; column: number }
 type Prop = { [index: string]: Position }
 interface Dict<T> {
@@ -31,66 +31,6 @@ class Property {
 
 class Action extends Property { }
 
-function extractProps(ast, parent: EmberClass) {
-    let dict: Dict<Property> = {};
-
-    AST.defaultExportProps(ast).filter(({value, key}) => {
-        return value.type !== "FunctionExpression" &&
-            key.name !== "actions";
-    }).forEach((k) => {
-        let newProp = new Property(k, parent);
-        dict[newProp.name] = newProp;
-    })
-
-    return dict;
-}
-
-function extractActions(ast, parent: EmberClass) {
-    let dict: Dict<Action> = {};
-    let actionsHash: any = _.find(AST.defaultExportProps(ast), { key: { name: "actions", type: "Identifier" } });
-    if (actionsHash) {
-        actionsHash.value.properties.forEach((p) => {
-            let a = new Action(p, parent);
-            dict[a.name] = a;
-        })
-        return dict;
-    }
-}
-
-function extractMixins(ast): EmberClass[] {
-    let mixins = _(AST.extractMixinIdentifiers(ast))
-        .map(name => {
-            let aPath = AST.findImportPathForIdentifier(ast, name);
-            if (!aPath || !lookupByAppPath(aPath)) {
-                console.log("Unable to find module for ", name, " looking in ", aPath);
-                return new EmptyEmberClass("component:ember");
-            } else {
-                return lookupByAppPath(aPath).definition;
-            }
-        }).value()
-
-    return mixins;
-
-}
-
-function extractSuperClass(ast): EmberClass {
-    let name = AST.superClassIdentifier(ast);
-    let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View', 'Mixin']
-    if (_.indexOf(emberNames, name) > -1 || !name) {
-        return new EmptyEmberClass("component:ember"); //TODO make this a null object
-    }
-    let importPath = AST.findImportPathForIdentifier(ast, name);
-
-    if (!importPath || !lookupByAppPath(importPath)) {
-        console.log("Unable to find module for ", name, " looking in ", importPath);
-
-        return new EmptyEmberClass("component:ember");
-    } else {
-        return lookupByAppPath(importPath).definition;
-    }
-
-}
-
 function emptyDict<T>(): Dict<T> {
     return {};
 }
@@ -98,19 +38,84 @@ function emptyDict<T>(): Dict<T> {
 export default class EmberClass {
     moduleName: string;
     filePath: string;
+    registry: Registry;
+
+    constructor(moduleName: string, filePath: string, registry: Registry) {
+        this.moduleName = moduleName;
+        this.filePath = filePath;
+        this.registry = registry;
+    }
+     extractProps(ast, parent: EmberClass) {
+        let dict: Dict<Property> = {};
+
+        AST.defaultExportProps(ast).filter(({ value, key }) => {
+            return value.type !== "FunctionExpression" &&
+                key.name !== "actions";
+        }).forEach((k) => {
+            let newProp = new Property(k, parent);
+            dict[newProp.name] = newProp;
+        })
+
+        return dict;
+    }
+
+    extractActions(ast, parent: EmberClass) {
+        let dict: Dict<Action> = {};
+        let actionsHash: any = _.find(AST.defaultExportProps(ast), { key: { name: "actions", type: "Identifier" } });
+        if (actionsHash) {
+            actionsHash.value.properties.forEach((p) => {
+                let a = new Action(p, parent);
+                dict[a.name] = a;
+            })
+            return dict;
+        }
+    }
+
+    extractMixins(ast): EmberClass[] {
+        let mixins = _(AST.extractMixinIdentifiers(ast))
+            .map(name => {
+                let aPath = AST.findImportPathForIdentifier(ast, name);
+                if (!aPath || !this.registry.lookupByAppPath(aPath)) {
+                    console.log("Unable to find module for ", name, " looking in ", aPath);
+                    return new EmptyEmberClass("component:ember", this.registry);
+                } else {
+                    return this.registry.lookupByAppPath(aPath).definition;
+                }
+            }).value()
+
+        return mixins;
+
+    }
+
+    extractSuperClass(ast): EmberClass {
+        let name = AST.superClassIdentifier(ast);
+        let emberNames = ['Ember', 'Component', 'Route', 'Controller', 'View', 'Mixin']
+        if (_.indexOf(emberNames, name) > -1 || !name) {
+            return new EmptyEmberClass("component:ember", this.registry); //TODO make this a null object
+        }
+        let importPath = AST.findImportPathForIdentifier(ast, name);
+
+        if (!importPath || !this.registry.lookupByAppPath(importPath)) {
+            console.log("Unable to find module for ", name, " looking in ", importPath);
+
+            return new EmptyEmberClass("component:ember", this.registry);
+        } else {
+            return this.registry.lookupByAppPath(importPath).definition;
+        }
+    }
 
     get superClass(): EmberClass | null {
-        return extractSuperClass(this.ast);
+        return this.extractSuperClass(this.ast);
     }
     get mixins(): EmberClass[] {
-        return extractMixins(this.ast);
+        return this.extractMixins(this.ast);
     }
 
     _ast: any;
     get ast() {
         if (this._ast) { return this._ast; }
 
-        let src = fileContents(this.moduleName);
+        let src = this.registry.fileContents(this.moduleName);
         this._ast = parseJs(src);
         return this._ast;
     }
@@ -119,7 +124,7 @@ export default class EmberClass {
         let superProps = this.superClass ? this.superClass.properties : {};
         let mixinProps = this.mixins.map(m => m.properties);
         // console.log("super props are ", _.keys(superProps))
-        let localProps = extractProps(this.ast, this);
+        let localProps = this.extractProps(this.ast, this);
         let emptyDict: Dict<Property> = {};
         
         return _.assign<Dict<Property>>({}, superProps, ...mixinProps, localProps)         
@@ -131,14 +136,10 @@ export default class EmberClass {
         let mixinActions = this.mixins.map(m => m.actions);
 
         // console.log("super actions are ", _.keys(superActions))
-        let localActions = extractActions(this.ast, this);
+        let localActions = this.extractActions(this.ast, this);
         return _.assign<Dict<Action>>({}, superActions, ...mixinActions, localActions);
     }
 
-    constructor(moduleName, filePath) {
-        this.moduleName = moduleName;
-        this.filePath = filePath;
-    }
 }
 
 export class EmptyEmberClass extends EmberClass {
@@ -150,8 +151,8 @@ export class EmptyEmberClass extends EmberClass {
         return [];
     }
 
-    constructor(moduleName) {
-        super(moduleName, "NO FILE");
+    constructor(moduleName, registry) {
+        super(moduleName, "NO FILE", registry);
     }
 
     get properties() {

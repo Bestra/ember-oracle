@@ -2,9 +2,10 @@ import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as ember from '../ember'
-import * as resolver from '../util/resolver'
-import { findComponent, lookup, fileContents } from '../util/registry'
+import Resolver from '../util/resolver'
+import Registry from '../util/registry'
 import * as callGraph from '../util/callGraph'
+
 import * as _ from 'lodash'
 import {
     containsPosition,
@@ -64,6 +65,8 @@ class NullPosition implements Defineable {
 class TemplateMember<T> implements Defineable {
     containingTemplate: Template;
     astNode: T;
+    resolver: Resolver;
+    registry: Registry;
 
     constructor(template, node) {
         this.containingTemplate = template;
@@ -121,7 +124,7 @@ export class Partial extends Mustache implements TemplateInvocation {
     }
 
     get templateFilePath() {
-        let m = lookup(this.templateModule);
+        let m = this.registry.lookup(this.templateModule);
         return m && m.filePath;
     }
 
@@ -131,7 +134,7 @@ export class Partial extends Mustache implements TemplateInvocation {
 
     get invokedAt() {
         return {
-            filePath: lookup(this.containingTemplate.moduleName).filePath,
+            filePath: this.registry.lookup(this.containingTemplate.moduleName).filePath,
             position: this.astNode.loc.start
         }
     }
@@ -171,11 +174,11 @@ export class Block extends Mustache {
 
 export class ComponentInvocation extends Block implements TemplateInvocation {
     get templateModule() {
-        return resolver.componentTemplate(this.pathString);
+        return this.resolver.componentTemplate(this.pathString);
     }
 
     get templateFilePath() {
-        let m = lookup(this.templateModule);
+        let m = this.registry.lookup(this.templateModule);
         return m && m.filePath;
     }
 
@@ -195,12 +198,12 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
     }
 
     get component() {
-        return lookup(this.moduleName).definition;
+        return this.registry.lookup(this.moduleName).definition;
     }
 
     get invokedAt() {
         return {
-            filePath: lookup(this.containingTemplate.moduleName).filePath,
+            filePath: this.registry.lookup(this.containingTemplate.moduleName).filePath,
             position: this.astNode.loc.start
         }
     }
@@ -216,7 +219,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
 
     get definedAt() {
         let filePath = this.templateFilePath ||
-            lookup(this.moduleName).filePath;
+            this.registry.lookup(this.moduleName).filePath;
         return {
             filePath,
             position: { line: 0, column: 0 }
@@ -224,7 +227,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
     }
 
     blockParamDefinition(index): FilePosition {
-        let position = lookup(this.templateModule).definition.getYieldPosition(index)
+        let position = this.registry.lookup(this.templateModule).definition.getYieldPosition(index)
         return {
             filePath: this.templateFilePath,
             position: position
@@ -238,11 +241,11 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
  */
 export class Action extends TemplateMember<htmlBars.Callable> {
     get definedAt() {
-        let contextModule = resolver.templateContext(
+        let contextModule = this.resolver.templateContext(
             this.containingTemplate.moduleName
         )
 
-        let context = lookup(contextModule).definition as ember.EmberClass
+        let context = this.registry.lookup(contextModule).definition as ember.EmberClass
         console.log(`looking up ${this.name} action from ${_.keys(context.actions)}`)
         let action = context.actions[this.name]
 
@@ -273,11 +276,11 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
     }
 
     get definedAt() {
-        let contextModule = resolver.templateContext(
+        let contextModule = this.resolver.templateContext(
             this.containingTemplate.moduleName
         )
 
-        let context = lookup(contextModule).definition as ember.EmberClass
+        let context = this.registry.lookup(contextModule).definition as ember.EmberClass
         let prop = context.properties[this.root];
         if (prop) {
             return {
@@ -335,14 +338,16 @@ class NoContext {
 export class Template {
     moduleName: string;
     filePath: string;
+    registry: Registry;
     get renderingContext() {
-        return lookup(resolver.templateContext(this.moduleName))
+        return this.registry.lookup(this.registry.resolver.templateContext(this.moduleName))
             || new NoContext(this.moduleName);
     }
 
-    constructor(moduleName: string, filePath: string) {
+    constructor(moduleName: string, filePath: string, registry: Registry) {
         this.moduleName = moduleName;
         this.filePath = filePath;
+        this.registry = registry;
     }
 
     _cache: {
@@ -469,7 +474,7 @@ export class Template {
 
         let mustacheComponents =
             (this.cachedNodes['MustacheStatement'])
-                .filter(n => !!findComponent(n.path.original))
+                .filter(n => !!this.registry.findComponent(n.path.original))
                 .map(n => new ComponentInvocation(this, n));
 
         return blockComponents.concat(mustacheComponents);
@@ -478,7 +483,7 @@ export class Template {
     get blocks() {
         return (this.cachedNodes['BlockStatement'])
             .map((node) => {
-                if (!!findComponent(node.path.original)) {
+                if (!!this.registry.findComponent(node.path.original)) {
                     return new ComponentInvocation(this, node);
                 } else {
                     return new Block(this, node);
@@ -489,7 +494,7 @@ export class Template {
     _astNode: htmlBars.Program;
     get astNode() {
         if (this._astNode) { return this._astNode }
-        let src = fileContents(this.moduleName);
+        let src = this.registry.fileContents(this.moduleName);
         this._astNode = htmlBars.parse(src);
         return this._astNode;
     }

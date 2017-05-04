@@ -2,7 +2,6 @@ import * as recast from 'recast'
 import * as _ from 'lodash'
 import * as ESTree from 'estree'
 
-import { lookup, fileContents, lookupByAppPath } from '../util/registry'
 type Position = { line: number; column: number }
 type Prop = { [index: string]: Position }
 interface Dict<T> {

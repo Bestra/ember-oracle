@@ -1,24 +1,32 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import * as resolver from '../util/resolver'
-import * as registry from '../util/registry'
+import Resolver from '../util/resolver'
+import Registry from '../util/registry'
 import { ok } from 'assert'
 
-export default function init(aPath: string, enginePaths: string[] = []) {
-    let rootPath = path.resolve(aPath);
-    console.log("Running ember-oracle on ", rootPath);
-    resolver.setRootPath(rootPath);
-    registry.registerModules(rootPath, "pods");
-    new ConfigFile(rootPath).addonPaths.forEach(p => {
-        console.log("registering modules in ", p)
-        registry.registerModules(p, "pods")
-    });
-    enginePaths.forEach(p => {
-        
-        registry.registerModules(p, "pods");
-    });
-}
+export default class Application {
+    resolver: Resolver;
+    registry: Registry;
+    constructor(resolver: Resolver, registry: Registry) {
+        this.resolver = resolver;
+        this.registry = registry;
+    }
+    init(aPath: string, enginePaths: string[] = []) {
+        let rootPath = path.resolve(aPath);
+        console.log("Running ember-oracle on ", rootPath);
+        this.resolver.rootPath = rootPath;
+        this.registry.registerModules(rootPath, "pods");
+        new ConfigFile(rootPath).addonPaths.forEach(p => {
+            console.log("registering modules in ", p)
+            this.registry.registerModules(p, "pods")
+        });
+        enginePaths.forEach(p => {
 
+            this.registry.registerModules(p, "pods");
+        });
+    }
+
+}
 class ConfigFile {
     addonPaths;
     constructor(rootPath: string) {

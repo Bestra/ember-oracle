@@ -1,50 +1,11 @@
-import * as registry from './registry'
-import * as resolver from './resolver'
+import Registry from './registry'
+import Resolver from './resolver'
 
 import * as _ from 'lodash'
 import * as fs from 'fs'
 import { Template, TemplateInvocation } from '../hbs'
 import { EmberClass } from '../ember'
-export let invocationsByTemplate: { [index: string]: { invocations: TemplateInvocation[]; context; template: string; } } = {};
-export let invocationsByComponent: { [index: string]: TemplateInvocation[] } = {};
-
-export function init() {
-    _.forEach(registry.allModules('template'), (val, key) => {
-        let template = val.definition as Template;
-        let invocations = template.invocations;
-
-        invocationsByTemplate[template.moduleName] =
-            {
-                invocations: invocations,
-                template: template.moduleName,
-                context: template.renderingContext
-            }
-    });
-
-    invocationsByComponent = _(invocationsByTemplate)
-        .values()
-        .map('invocations')
-        .flatten()
-        .groupBy('moduleName')
-        .value() as any;
-}
-
-export function invocations(componentModule: string, attrName: string) {
-    return _.map(invocationsByComponent[componentModule], invocation => {
-        let p = invocation.invokedAt;
-        return [p.filePath, p.position.line, p.position.column, invocation.invokedAttr(attrName)].join(':')
-    });
-}
-
-export function parentTemplates(componentModule: string) {
-    let components = invocationsByComponent[componentModule];
-    return _(components)
-        .map(c => c.invokedAt)
-        .map(p => [p.filePath, p.position.line, p.position.column].join(':'))
-        .value();
-}
-
-export interface InvocationNode {
+export class InvocationNode {
     props;
     position;
     count: number;
@@ -53,12 +14,168 @@ export interface InvocationNode {
     isPartial: boolean;
 }
 
-export interface CallNode {
+export class CallNode {
     isPartial: boolean;
     invocations: InvocationNode[];
     template: { moduleName; props; actions } // called in the template
     context: { moduleName; props; actions }
 }
+
+export class CallGraph {
+    invocationsByTemplate: { [index: string]: { invocations: TemplateInvocation[]; context; template: string; } } = {};
+    invocationsByComponent: { [index: string]: TemplateInvocation[] } = {};
+    registry: Registry;
+    resolver: Resolver;
+    gNodes: { [index: string]: CallNode } = {};
+    gEdges: InvocationNode[] = [];
+    constructor(resolver: Resolver, registry: Registry) {
+      this.registry = registry;
+      this.resolver = resolver;
+    }
+    init() {
+        _.forEach(this.registry.allModules('template'), (val, key) => {
+            let template = val.definition as Template;
+            let invocations = template.invocations;
+
+            this.invocationsByTemplate[template.moduleName] =
+                {
+                    invocations: invocations,
+                    template: template.moduleName,
+                    context: template.renderingContext
+                }
+        });
+
+        this.invocationsByComponent = _(this.invocationsByTemplate)
+            .values()
+            .map('invocations')
+            .flatten()
+            .groupBy('moduleName')
+            .value() as any;
+    }
+    createNode(templateModule: string, isPartial: boolean) {
+        if (this.gNodes[templateModule]) { return this.gNodes[templateModule]; }
+
+        let contextModule = this.resolver.templateContext(templateModule);
+
+        let template;
+        let templateDef: Template | null = null;
+        if (this.registry.lookup(templateModule)) {
+            templateDef = this.registry.lookup(templateModule).definition as Template;
+            template = {
+                moduleName: templateModule,
+                props: templateDef.props,
+                actions: templateDef.actions
+            }
+        } else {
+            template = {
+                moduleName: null,
+                props: {},
+                actions: {}
+            }
+        }
+        let context;
+        if (this.registry.lookup(contextModule)) {
+            let renderingContext = this.registry.lookup(contextModule).definition as EmberClass;
+            context = {
+                moduleName: contextModule,
+                props: renderingContext.properties,
+                actions: renderingContext.actions
+            }
+        } else {
+            context = {
+                moduleName: null,
+                props: {},
+                actions: {}
+            }
+        }
+        let node: CallNode = {
+            template,
+            context, isPartial,
+            invocations: []
+        }
+        this.gNodes[templateModule] = node;
+        if (templateDef) {
+            let invocations = templateDef.invocations;
+            invocations.forEach((i) => {
+                let edge = {
+                    from: node,
+                    to: this.createNode(i.templateModule, i.isPartial),
+                    props: i.props,
+                    count: 1,
+                    isPartial: i.isPartial,
+                    position: i.astNode.loc.start
+                }
+                node.invocations.push(edge);
+                this.gEdges.push(edge);
+            });
+
+        }
+        return node;
+    }
+    createGraph() {
+        let templateCount = _.keys(this.registry.allModules('template')).length
+        _.forEach(this.registry.allModules('template'), (val, key) => {
+            this.createNode("template:" + key, false);
+            process.stderr.write('.')
+        });
+        return { gNodes: this.gNodes, gEdges: this.gEdges };
+    }
+
+    invocations(componentModule: string, attrName: string) {
+        return _.map(this.invocationsByComponent[componentModule], invocation => {
+            let p = invocation.invokedAt;
+            return [p.filePath, p.position.line, p.position.column, invocation.invokedAttr(attrName)].join(':')
+        });
+    }
+
+    parentTemplates(componentModule: string) {
+        let components = this.invocationsByComponent[componentModule];
+        return _(components)
+            .map(c => c.invokedAt)
+            .map(p => [p.filePath, p.position.line, p.position.column].join(':'))
+            .value();
+    }
+
+    createDotGraph(moduleName: string, recurse?: boolean, collapseInvocations?: boolean) {
+        let findParentEdges = (moduleName: string, found) => {
+            let edges = this.gEdges.filter(e => e.to.template.moduleName === moduleName);
+            found.push(...edges);
+            edges.forEach(e => {
+                if (e.from.template.moduleName) { findParentEdges(e.from.template.moduleName, found) }
+            });
+            return found;
+        };
+
+        if (moduleName) {
+            let node = this.gNodes[moduleName];
+            let parentEdges = findParentEdges(moduleName, []);
+            let nodes = _.uniq<CallNode>(parentEdges.map(e => e.from).concat(parentEdges.map(e => e.to)));
+            return this.outputGraph(nodes, parentEdges, collapseInvocations)
+        } else {
+            let graphNodes = _.values<CallNode>(this.gNodes);
+            let graphEdges = this.gEdges;
+            return this.outputGraph(graphNodes, graphEdges, collapseInvocations);
+        }
+    }
+    outputGraph(nodes: CallNode[], edges: InvocationNode[], collapse) {
+        let outputEdges;
+        if (collapse) {
+            let edgesPerNode = _.groupBy(edges, 'from');
+            outputEdges = _.flatMap(nodes, condenseEdges)
+        } else {
+            outputEdges = edges;
+        }
+        let output = [
+            "digraph {",
+            "node [shape=record];",
+            ...nodes.map(graphVizNode),
+            ...outputEdges.map(graphVizEdge),
+            "}"
+        ].join('\n');
+        return output;
+    }
+}
+
 
 export function graphVizNode(node: CallNode) {
     let url = `URL="http://localhost:5300/graph.svg?module=${node.template.moduleName}"`
@@ -76,76 +193,6 @@ export function graphVizEdge(edge: InvocationNode) {
         return `"${edge.from.template.moduleName}" -> "${edge.to.template.moduleName}" ${label};`
     }
 }
-export let gNodes: { [index: string]: CallNode } = {};
-export let gEdges: InvocationNode[] = [];
-function createNode(templateModule: string, isPartial: boolean) {
-    if (gNodes[templateModule]) { return gNodes[templateModule]; }
-
-    let contextModule = resolver.templateContext(templateModule);
-
-    let template;
-    let templateDef: Template | null = null;
-    if (registry.lookup(templateModule)) {
-        templateDef = registry.lookup(templateModule).definition as Template;
-        template = {
-            moduleName: templateModule,
-            props: templateDef.props,
-            actions: templateDef.actions
-        }
-    } else {
-        template = {
-            moduleName: null,
-            props: {},
-            actions: {}
-        }
-    }
-    let context;
-    if (registry.lookup(contextModule)) {
-        let renderingContext = registry.lookup(contextModule).definition as EmberClass;
-        context = {
-            moduleName: contextModule,
-            props: renderingContext.properties,
-            actions: renderingContext.actions
-        }
-    } else {
-        context = {
-            moduleName: null,
-            props: {},
-            actions: {}
-        }
-    }
-    let node: CallNode = {
-        template,
-        context, isPartial,
-        invocations: []
-    }
-    gNodes[templateModule] = node;
-    if (templateDef) {
-        let invocations = templateDef.invocations;
-        invocations.forEach((i) => {
-            let edge = {
-                from: node,
-                to: createNode(i.templateModule, i.isPartial),
-                props: i.props,
-                count: 1,
-                isPartial: i.isPartial,
-                position: i.astNode.loc.start
-            }
-            node.invocations.push(edge);
-            gEdges.push(edge);
-        });
-
-    }
-    return node;
-}
-export function createGraph() {
-    let templateCount = _.keys(registry.allModules('template')).length
-    _.forEach(registry.allModules('template'), (val, key) => {
-        createNode("template:" + key, false);
-        process.stderr.write('.')
-    });
-    return { gNodes, gEdges };
-}
 
 function condenseEdges(node: CallNode) {
     let condensed = [];
@@ -154,7 +201,7 @@ function condenseEdges(node: CallNode) {
         .map(function (invocations: InvocationNode[], toModule) {
             let groupedInvocations = _.groupBy(invocations, i => Object.keys(i.props).sort().join(','));
             return _.map(groupedInvocations, (grp, propList): InvocationNode => {
-                let {props, isPartial, from, to, position} = grp[0];
+                let { props, isPartial, from, to, position } = grp[0];
                 return { props, isPartial, from, to, position, count: grp.length }
             });
         })
@@ -162,43 +209,4 @@ function condenseEdges(node: CallNode) {
         .value();
 
     return a;
-}
-function outputGraph(nodes: CallNode[], edges: InvocationNode[], collapse) {
-    let outputEdges;
-    if (collapse) {
-        let edgesPerNode = _.groupBy(edges, 'from');
-        outputEdges = _.flatMap(nodes, condenseEdges)
-    } else {
-        outputEdges = edges;
-    }
-    let output = [
-        "digraph {",
-        "node [shape=record];",
-        ...nodes.map(graphVizNode),
-        ...outputEdges.map(graphVizEdge),
-        "}"
-    ].join('\n');
-    return output;
-}
-
-export function createDotGraph(moduleName: string, recurse?: boolean, collapseInvocations?: boolean) {
-    let findParentEdges = (moduleName: string, found) => {
-        let edges = gEdges.filter(e => e.to.template.moduleName === moduleName);
-        found.push(...edges);
-        edges.forEach(e => {
-            if (e.from.template.moduleName) { findParentEdges(e.from.template.moduleName, found) }
-        });
-        return found;
-    };
-
-    if (moduleName) {
-        let node = gNodes[moduleName];
-        let parentEdges = findParentEdges(moduleName, []);
-        let nodes = _.uniq<CallNode>(parentEdges.map(e => e.from).concat(parentEdges.map(e => e.to)));
-        return outputGraph(nodes, parentEdges, collapseInvocations)
-    } else {
-        let graphNodes = _.values<CallNode>(gNodes);
-        let graphEdges = gEdges;
-        return outputGraph(graphNodes, graphEdges, collapseInvocations);
-    }
 }

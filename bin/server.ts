@@ -1,12 +1,12 @@
 #! /usr/bin/env node
-import startServer from '../lib/server'
+import Server from '../lib/server'
 
 function start() {
     let args = process.argv.slice(2);
     let dir = args[0];
     let engines = args.slice(1) || [];
 
-    startServer(dir, engines);
+    new Server().start(dir, engines);
         
 };
 

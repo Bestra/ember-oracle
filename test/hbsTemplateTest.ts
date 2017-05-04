@@ -1,16 +1,18 @@
 let td = require('testdouble');
 import * as assert from 'assert'
 import * as hbs from '../lib/hbs'
+import Registry from '../lib/util/registry'
+import Resolver from '../lib/util/resolver'
+import { Template } from '../lib/hbs'
 afterEach(function () {
   td.reset();
 })
 
 describe('Template', function () {
-  var registry, subject: hbs.Template;
+  var registry, subject;
   beforeEach(function () {
-    registry = td.replace('../lib/util/registry');
-    var { Template } = require('../lib/hbs');
-    subject = new Template("template:foo", null);
+    registry = td.object(new Registry(new Resolver()));
+    subject = new Template("template:foo", "foo", registry);
   })
   describe('template src is available in the registry', function () {
     beforeEach(function () {

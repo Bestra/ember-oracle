@@ -1,8 +1,9 @@
-import * as resolver from '../lib/util/resolver'
+import Resolver from '../lib/util/resolver'
 import * as assert from 'assert'
 import * as _ from 'lodash'
 describe("the resolver", function () {
     let rootPath = "path/to/my/app/client/";
+    let resolver = new Resolver();
 
     describe("translating path into modules", function () {
         let assertModule = (fullPath, root, module) => {
@@ -32,7 +33,7 @@ describe("the resolver", function () {
     
     describe('filePathFromAppPath', function() {
       beforeEach(function () {
-          resolver.setRootPath("/some/path/");
+          resolver.rootPath = "/some/path/";
           resolver.appName = "testApp";
       })
       

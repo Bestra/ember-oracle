@@ -1,17 +1,20 @@
 let td = require('testdouble');
 import * as _ from 'lodash'
 import * as assert from 'assert'
+import Registry from '../lib/util/registry'
+import Resolver from '../lib/util/resolver'
+import EmberClass from '../lib/ember/emberClass'
 afterEach(function () {
   td.reset();
 })
 
 
 describe('EmberClass', function () {
-  var registry, subject, EmberClass;
+  var registry, subject;
   beforeEach(function () {
-    registry = td.replace('../lib/util/registry');
-    EmberClass = require('../lib/ember/emberClass').default;
-    subject = new EmberClass("component:child", "testFile");
+    registry = td.object(new Registry(new Resolver()));
+
+    subject = new EmberClass("component:child", "testFile", registry);
   });
 
   describe('component is an Ember subclass', function () {
@@ -71,7 +74,7 @@ describe('EmberClass', function () {
       let parentSrc =
         `export default Ember.Component.extend({parentProp: "foo"})`
       td.when(registry.lookupByAppPath('my-app/components/parent')).thenReturn(
-        { definition: new EmberClass("component:parent", "parentPath") }
+        { definition: new EmberClass("component:parent", "parentPath", registry) }
       )
       td.when(registry.fileContents("component:child")).thenReturn(childSrc);
       td.when(registry.fileContents("component:parent")).thenReturn(parentSrc);
