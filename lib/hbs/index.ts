@@ -4,7 +4,6 @@ import * as fs from 'fs'
 import * as ember from '../ember'
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
-import * as callGraph from '../util/callGraph'
 
 import * as _ from 'lodash'
 import {

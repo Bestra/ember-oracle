@@ -5,20 +5,19 @@ import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
-import { CallGraph } from '../util/callGraph'
+import { RenderGraph } from '../util/renderGraph'
 import parser from '../util/parser';
 import * as _ from 'lodash'
 
-import { Template } from '../hbs';
 
 import { ok } from 'assert'
 
-import Application from './startApp'
+import Application from './app'
 
 export default class Server {
     app: Application;
     start(appPath: string, enginePaths: string[]) {
-       
+
         let koaApp = new Koa();
         let router = new Router();
 
@@ -27,28 +26,16 @@ export default class Server {
         let registry = new Registry(resolver);
         let app = new Application(resolver, registry)
         app.init(appPath, enginePaths);
-        this.app = app;
-        let callGraph = new CallGraph(resolver, registry);
 
-        let t2 = Date.now();
-        callGraph.init();
-        callGraph.createGraph();
-        let t3 = Date.now();
-
-        console.log("init in ", t2 - t1);
-        console.log("graph in ", t3 - t2);
         router.get('/', function (ctx, next) {
             ctx.body = "Hey";
         });
 
         router.get('/files/alternate', function (ctx, next) {
-            let fullPath = path.resolve(ctx.query.path);
-            let moduleName = app.registry.lookupModuleName(fullPath);
-            console.log("looking up alternate for module ", moduleName)
+            let associated = app.alternateFile(ctx.query.path);
 
-            let associated = app.resolver.alternateModule(moduleName);
             if (associated) {
-                ctx.body = app.registry.lookup(associated).filePath;
+                ctx.body = associated
             } else {
                 ctx.body = "No alternate found"
             }
@@ -56,30 +43,22 @@ export default class Server {
 
         router.get('/modules', function (ctx, next) {
             let type = ctx.query.type;
-            ctx.body = app.registry.moduleNames(type).join('\n');
+            ctx.body = app.moduleNames(type).join('\n');
         });
 
         router.get('/module', function (ctx, next) {
             let moduleName = ctx.query.moduleName;
             console.log("looking up filepath for module ", moduleName);
-            ctx.body = app.registry.lookup(moduleName).definition.filePath;
+            ctx.body = app.modulePath(moduleName);
         });
 
         router.get('/templates/definition', function (ctx, next) {
             console.log(ctx.query);
-            let fullPath = path.resolve(ctx.query.path);
-            let template = app.registry.lookup(app.registry.lookupModuleName(fullPath)).definition as Template;
-
-            let queryPosition = { line: parseInt(ctx.query.line), column: parseInt(ctx.query.column) };
-            let defineable = template.parsePosition(queryPosition);
-            let position = defineable.definedAt;
-            let invokedAttrs = callGraph.invocations(
-                app.resolver.templateContext(template.moduleName),
-                ctx.query.attr
-            ).filter((a) => { return !a.match(/not provided/) });
+            let { path, line, column, attr, format } = ctx.query;
+            let { position, invokedAttrs } = app.definitionForSymbolInTemplate(path, line, column, attr)
 
             console.log("found position: ", JSON.stringify(position))
-            if (ctx.query.format === "compact") {
+            if (format === "compact") {
                 if (position) {
                     let definitionFile = fs.readFileSync(position.filePath, 'utf8');
                     let defLine;
@@ -99,30 +78,12 @@ export default class Server {
             }
         });
 
-        let findContextModule = (filePath: string) => {
-            let m = app.registry.lookupModuleName(filePath);
-            let contextModule = app.resolver.templateContext(m);
-            return app.registry.lookup(contextModule) ? contextModule : m;
-        }
-
-        let findAttrs = (templateFilePath: string, attrName: string) => {
-            let m = findContextModule(templateFilePath);
-            console.log("looking up parents for ", m)
-            return callGraph.invocations(m, attrName);
-        }
-
-        let findParents = (templateFilePath: string) => {
-            let m = findContextModule(templateFilePath);
-            console.log("looking up attrs for ", m)
-            return callGraph.parentTemplates(m);
-        }
-
         router.get('/templates/parents', function (ctx, next) {
             console.log(ctx.query);
             // TODO: change callgraph to work off templates first rather than context
             let fullPath = path.resolve(ctx.query.path);
 
-            let parents = findParents(fullPath);
+            let parents = app.findParents(fullPath);
             if (ctx.query.format === "compact") {
                 ctx.body = parents.join('\n');
             } else {
@@ -134,7 +95,7 @@ export default class Server {
             console.log(ctx.query);
 
             let fullPath = path.resolve(ctx.query.path);
-            let parents = findAttrs(fullPath, ctx.query.attr);
+            let parents = app.invokedAttrs(fullPath, ctx.query.attr);
             if (ctx.query.format === "compact") {
                 ctx.body = parents.join('\n');
             } else {
@@ -142,38 +103,18 @@ export default class Server {
             }
         });
 
-        router.get('/graph.svg', function (ctx, next) {
-            console.log(ctx.query);
-            let templateModule;
-            if (ctx.query.path) {
-                let fullPath = path.resolve(ctx.query.path);
-                templateModule = app.registry.lookupModuleName(fullPath);
-            } else if (ctx.query.module) {
-                templateModule = ctx.query.module;
-            } else {
-                templateModule = null;
-            }
-            let collapse = ctx.query.collapse || false;
-            let dot = callGraph.createDotGraph(templateModule, true, collapse);
-            let svg = childProcess.execSync('dot -Tsvg', { input: dot });
-            ctx.body = svg;
-            ctx.type = "image/svg+xml"
-
-        });
         router.get('/graph.dot', function (ctx, next) {
             console.log(ctx.query);
-            let templateModule;
-            if (ctx.query.path) {
-                let fullPath = path.resolve(ctx.query.path);
-                templateModule = app.registry.lookupModuleName(fullPath);
-            } else if (ctx.query.module) {
-                templateModule = ctx.query.module;
-            } else {
-                templateModule = null;
-            }
-
-            let dot = callGraph.createDotGraph(templateModule, true);
+            let dot = app.dotGraph(ctx.query);
             ctx.body = dot;
+
+        });
+        router.get('/graph.svg', function (ctx, next) {
+            console.log(ctx.query);
+            let svg = app.svgGraph(ctx.query);
+
+            ctx.body = svg;
+            ctx.type = "image/svg+xml"
 
         });
 

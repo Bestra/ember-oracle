@@ -1,5 +1,6 @@
 import Registry from './registry'
 import Resolver from './resolver'
+import { Graph } from 'graphlib'
 
 import * as _ from 'lodash'
 import * as fs from 'fs'
@@ -21,11 +22,12 @@ export class CallNode {
     context: { moduleName; props; actions }
 }
 
-export class CallGraph {
+export class RenderGraph {
     invocationsByTemplate: { [index: string]: { invocations: TemplateInvocation[]; context; template: string; } } = {};
     invocationsByComponent: { [index: string]: TemplateInvocation[] } = {};
     registry: Registry;
     resolver: Resolver;
+    graph = new Graph();
     gNodes: { [index: string]: CallNode } = {};
     gEdges: InvocationNode[] = [];
     constructor(resolver: Resolver, registry: Registry) {
