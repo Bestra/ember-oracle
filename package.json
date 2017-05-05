@@ -10,7 +10,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "postinstall": "scripts/vim-prompt",
-    "start": "dist/bin/server.js",
+    "start": "node dist/bin/server.js",
     "test": "node_modules/.bin/mocha ./dist/test/index.js",
     "typescript-version": "tsc -v",
     "watch": "tsc -w -p .",

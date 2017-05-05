@@ -12,7 +12,7 @@ let res = new Resolver();
 let reg = new Registry(res);
 new Application(res, reg).init(dir, engines);
 console.log('creating graph')
-let renderGraph = new RenderGraph(res, reg);
+let renderGraph = new RenderGraph(reg);
 renderGraph.init();
 renderGraph.createGraph();
 

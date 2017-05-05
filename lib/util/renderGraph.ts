@@ -30,9 +30,9 @@ export class RenderGraph {
     graph = new Graph();
     gNodes: { [index: string]: CallNode } = {};
     gEdges: InvocationNode[] = [];
-    constructor(resolver: Resolver, registry: Registry) {
+    constructor(registry: Registry) {
       this.registry = registry;
-      this.resolver = resolver;
+      this.resolver = registry.resolver;
     }
     init() {
         _.forEach(this.registry.allModules('template'), (val, key) => {
@@ -159,6 +159,7 @@ export class RenderGraph {
             return this.outputGraph(graphNodes, graphEdges, collapseInvocations);
         }
     }
+
     outputGraph(nodes: CallNode[], edges: InvocationNode[], collapse) {
         let outputEdges;
         if (collapse) {

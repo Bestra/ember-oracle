@@ -7,12 +7,28 @@ import Registry from '../util/registry'
 import { ok } from 'assert'
 import { Template } from '../hbs';
 
-
 class StringWrapper {
     string: string;
 
     constructor(s: string) {
         this.string = s;
+    }
+}
+
+class ConfigFile {
+    addonPaths;
+    constructor(rootPath: string) {
+        let dotFilePath = path.join(rootPath, ".ember-oracle");
+        this.addonPaths = [];
+        console.log(`looking for config file at ${dotFilePath}`);
+        if (fs.existsSync(dotFilePath)) {
+            let dotInfo = JSON.parse(fs.readFileSync(dotFilePath, 'utf8'))
+            console.log("addon paths found in config file:");
+            console.log(dotInfo.addonPaths);
+            this.addonPaths = dotInfo.addonPaths.map(p => {
+                return path.resolve(dotFilePath, p);
+            });
+        }
     }
 }
 
@@ -24,7 +40,7 @@ export default class Application {
     constructor(resolver: Resolver, registry: Registry) {
         this.resolver = resolver;
         this.registry = registry;
-        this.renderGraph =  new RenderGraph(this.resolver, this.registry);
+        this.renderGraph =  new RenderGraph(this.registry);
     }
 
     init(aPath: string, enginePaths: string[] = []) {
@@ -123,19 +139,4 @@ export default class Application {
         return childProcess.execSync('dot -Tsvg', { input: dot });
     }
 }
-class ConfigFile {
-    addonPaths;
-    constructor(rootPath: string) {
-        let dotFilePath = path.join(rootPath, ".ember-oracle");
-        this.addonPaths = [];
-        console.log(`looking for config file at ${dotFilePath}`);
-        if (fs.existsSync(dotFilePath)) {
-            let dotInfo = JSON.parse(fs.readFileSync(dotFilePath, 'utf8'))
-            console.log("addon paths found in config file:");
-            console.log(dotInfo.addonPaths);
-            this.addonPaths = dotInfo.addonPaths.map(p => {
-                return path.resolve(dotFilePath, p);
-            });
-        }
-    }
-}
+

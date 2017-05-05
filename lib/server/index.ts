@@ -6,9 +6,7 @@ import * as fs from 'fs';
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
 import { RenderGraph } from '../util/renderGraph'
-import parser from '../util/parser';
 import * as _ from 'lodash'
-
 
 import { ok } from 'assert'
 
@@ -117,11 +115,6 @@ export default class Server {
             ctx.type = "image/svg+xml"
 
         });
-
-        router.get('/ast', function (ctx, next) {
-            let fullPath = path.resolve(ctx.query.path);
-            ctx.body = parser(fullPath);
-        })
 
         koaApp.use(router.routes())
             .use(router.allowedMethods());

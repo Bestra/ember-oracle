@@ -64,12 +64,14 @@ class NullPosition implements Defineable {
 class TemplateMember<T> implements Defineable {
     containingTemplate: Template;
     astNode: T;
-    resolver: Resolver;
     registry: Registry;
+    resolver: Resolver;
 
     constructor(template, node) {
         this.containingTemplate = template;
         this.astNode = node;
+        this.registry = this.containingTemplate.registry;
+        this.resolver = this.registry.resolver;
     }
 
     get definedAt(): FilePosition | null {
