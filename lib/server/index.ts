@@ -26,7 +26,8 @@ export default class Server {
         app.init(appPath, enginePaths);
 
         router.get('/', function (ctx, next) {
-            ctx.body = "Hey";
+            console.log(ctx);
+            ctx.body = ctx.query;
         });
 
         router.get('/files/alternate', function (ctx, next) {
