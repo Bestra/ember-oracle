@@ -24,6 +24,7 @@
   "files": [
     "dist",
     "vim",
+    "emacs",
     "scripts",
     "README.md"
   ],
