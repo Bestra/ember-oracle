@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import * as ember from '../ember'
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
+import EmberClass from '../ember/emberClass'
 
 import * as _ from 'lodash'
 import {

@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import { RenderGraph } from '../util/renderGraph'
+import { NewRenderGraph } from '../util/renderGraph'
 import * as childProcess from 'child_process';
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
@@ -35,12 +35,12 @@ class ConfigFile {
 export default class Application {
     resolver: Resolver;
     registry: Registry;
-    renderGraph: RenderGraph;
+    renderGraph: NewRenderGraph;
 
     constructor(resolver: Resolver, registry: Registry) {
         this.resolver = resolver;
         this.registry = registry;
-        this.renderGraph =  new RenderGraph(this.registry);
+        this.renderGraph =  new NewRenderGraph(this.registry);
     }
 
     init(aPath: string, enginePaths: string[] = []) {
@@ -61,7 +61,6 @@ export default class Application {
         let t2 = Date.now();
 
         this.renderGraph.init();
-        this.renderGraph.createGraph();
                 let t3 = Date.now();
 
         console.log("init in ", t2 - t1);

@@ -48,7 +48,7 @@ export default class Registry {
     constructor(resolver) {
         this.resolver = resolver;
     }
-    
+
     /**
      * Creates a new module for the given path
      * @param filePath 
@@ -74,6 +74,14 @@ export default class Registry {
     }
     registerManually(moduleName, filePath) {
         this.registeredModules['imports'][moduleName] = { filePath, definition: new EmberClass(moduleName, filePath, this) }
+    }
+
+    /**
+     * Delegates to the resolver, does not actually confirm
+     * whether the context module exists
+     */
+    templateContext(templateModule: string): string {
+        return this.resolver.templateContext(templateModule);
     }
 
     registerModules(rootPath, podPrefix) {
@@ -103,13 +111,17 @@ export default class Registry {
     /**
      * Only retrieve items from the registry by module name.
      */
-    lookup(moduleName: string) {
+    lookup(moduleName: string): RegistryEntry {
         let [moduleType, modulePath] = moduleName.split(':');
         let modules = this.registeredModules[moduleType];
 
         assert.ok(modules, `modules for type: ${moduleType} should exist`);
         return this.registeredModules[moduleType][modulePath];
 
+    }
+
+    confirmExistance(moduleName: string) {
+        return this.lookup(moduleName) ? moduleName : null
     }
 
     lookupByAppPath(appPath) {

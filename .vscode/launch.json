@@ -18,9 +18,9 @@
 			"env": {
 				"NODE_ENV": "development"
 			},
-			"externalConsole": false,
-			"sourceMaps": false,
-			"outDir": null
+			"console": "integratedTerminal",
+			"sourceMaps": true,
+			"outFiles": []
 		},
 		{
 			"name": "CallGraph",
@@ -38,9 +38,9 @@
 			"env": {
 				"NODE_ENV": "development"
 			},
-			"externalConsole": false,
+			"console": "integratedTerminal",
 			"sourceMaps": true,
-			"outDir": null
+			"outFiles": []
 		},
 		{
 			"name": "Test",
@@ -58,7 +58,7 @@
 			"env": {
 				"NODE_ENV": "development"
 			},
-			"externalConsole": false,
+			"console": "integratedTerminal",
 			"sourceMaps": true
 		},
 		{
@@ -69,7 +69,7 @@
 			"address": "localhost",
 			"restart": false,
 			"sourceMaps": false,
-			"outDir": null,
+			"outFiles": [],
 			"localRoot": "${workspaceRoot}",
 			"remoteRoot": null
 		}
