@@ -5,7 +5,6 @@ import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
-import { RenderGraph } from '../util/renderGraph'
 import * as _ from 'lodash'
 
 import { ok } from 'assert'
