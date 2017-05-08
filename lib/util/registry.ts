@@ -8,6 +8,7 @@ import * as files from './files';
 import * as _ from 'lodash';
 import * as path from 'path';
 import * as util from 'util';
+import { Wrapper } from '../util'
 import { readFileSync } from 'fs';
 import { EmberClass, EmptyEmberClass } from '../ember';
 import { Template } from '../hbs'
@@ -27,6 +28,7 @@ let SUPPORTED_MODULES = {
 interface Dict<T> {
     [index: string]: T
 }
+
 
 type RegistryEntry = { filePath; definition; };
 type RegistryType = Dict<RegistryEntry>;

@@ -65,6 +65,7 @@ export default class Application {
 
         console.log("init in ", t2 - t1);
         console.log("graph in ", t3 - t2);
+        global["App"] = this;
 
     }
 

@@ -24,8 +24,8 @@ export class CallNode {
 
 export class NewRenderGraph {
     registry: Registry;
-    graph = new Graph();
-    completedEdges = {};
+    graph = new Graph({multigraph: true});
+    allInvocations = {};
     constructor(registry: Registry) {
       this.registry = registry;
     }
@@ -46,7 +46,7 @@ export class NewRenderGraph {
      *  either be missing a template.hbs file (think of an Ember.Textfield subclass) or could be missing
      *  its component.js file.  Partials will have a template but no rendering context
      */
-    createNode(templateModule: string, parentTemplateModule: string | null, {line, column}) {
+    createNode(templateModule: string, parentTemplateModule: string | null, invocation) {
         let contextModule = this.registry.templateContext(templateModule);
         let foundContext = this.registry.confirmExistance(contextModule);
         let foundTemplate = this.registry.confirmExistance(templateModule);
@@ -56,13 +56,15 @@ export class NewRenderGraph {
         // 2. parent i-> context
         // 3. parent i-> template
         if (parentTemplateModule) {
+          let {line, column} = invocation.invokedAt.position;
           let invocationTarget = (foundContext || foundTemplate);
-          let edgeName = parentTemplateModule + invocationTarget + line + column;
-          if (this.completedEdges[edgeName]) { 
+          let edgeName = parentTemplateModule + "$" + invocationTarget + "$" + line + ":" + column;
+          if (this.allInvocations[edgeName]) { 
               return; 
             }
-          this.graph.setEdge(parentTemplateModule, invocationTarget!, `${line}:${column}`)
-          this.completedEdges[edgeName] = true;
+          let edgeDef = `${line}:${column}`;
+          this.graph.setEdge(parentTemplateModule, invocationTarget!, edgeDef, edgeDef);
+          this.allInvocations[edgeName] = invocation;
         }
 
         let templateDef: Template | null = null;
@@ -72,8 +74,7 @@ export class NewRenderGraph {
             }
             templateDef = this.registry.lookup(templateModule).definition as Template;
             templateDef.invocations.forEach((i) => {
-                let {line, column} = i.invokedAt.position;
-                   this.createNode(i.templateModule, templateModule, {line, column});
+                   this.createNode(i.templateModule, templateModule, i);
             });
         }      
     }
@@ -83,6 +84,20 @@ export class NewRenderGraph {
     }
 
     parentTemplates(componentModule: string) {
+        //direct predecessors could be either components or templates
+        let preds = this.graph.predecessors(componentModule);
+        let isTemplate = (p) => p.split(":")[0] === "template";
+        let [directTemplates, [context]] = _.partition(preds!, isTemplate);
+
+        let contextTemplates = this.graph.predecessors(context)!.filter(isTemplate);
+        let allTemplates = directTemplates.concat(contextTemplates);
+        return allTemplates.map((t) => {
+            let edgeLabel = this.graph.edge(t, componentModule);
+            return [this.registry.lookup(t).filePath, edgeLabel].join(':');
+        })
+    } 
+
+    invocationSites(componentModule: string) {
         //direct predecessors could be either components or templates
         let preds = this.graph.predecessors(componentModule);
         let isTemplate = (p) => p.split(":")[0] === "template";
