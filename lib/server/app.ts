@@ -102,9 +102,11 @@ export default class Application {
     }
 
     findParents(templateFilePath: string) {
-        let m = this.findContextModule(templateFilePath);
-        console.log("looking up attrs for ", m)
-        return this.renderGraph.parentTemplates(m);
+        let m = this.registry.lookupModuleName(templateFilePath);
+        console.log("looking up parent templates for ", m)
+        let results = this.renderGraph.invocationSites(m);
+        console.log("found ", results.length);
+        return this.renderGraph.invocationSites(m);
     }
 
     alternateFile(filePath) {

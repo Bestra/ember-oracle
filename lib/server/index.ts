@@ -81,7 +81,11 @@ export default class Server {
             // TODO: change callgraph to work off templates first rather than context
             let fullPath = path.resolve(ctx.query.path);
 
-            let parents = app.findParents(fullPath);
+            let parents = app.findParents(fullPath).map((t) => {
+                let { line, column } = t.invokedAt.position;
+                return [t.invokedAt.filePath, line, column].join(':');
+            })
+            
             if (ctx.query.format === "compact") {
                 ctx.body = parents.join('\n');
             } else {

@@ -1,7 +1,7 @@
 import Registry from './registry'
 import Resolver from './resolver'
 import { Graph, Edge } from 'graphlib'
-
+import { Dict } from '../util/types'
 import * as _ from 'lodash'
 import * as fs from 'fs'
 import { Template, TemplateInvocation } from '../hbs'
@@ -25,7 +25,7 @@ export class CallNode {
 export class NewRenderGraph {
     registry: Registry;
     graph = new Graph({multigraph: true});
-    allInvocations = {};
+    allInvocations: Dict<TemplateInvocation> = {};
     constructor(registry: Registry) {
       this.registry = registry;
     }
@@ -55,22 +55,22 @@ export class NewRenderGraph {
         // 1. parent i-> context -> template
         // 2. parent i-> context
         // 3. parent i-> template
+        // TODO: note that partials will need to have their context set to the invoking template's context
         if (parentTemplateModule) {
           let {line, column} = invocation.invokedAt.position;
           let invocationTarget = (foundContext || foundTemplate);
-          let edgeName = parentTemplateModule + "$" + invocationTarget + "$" + line + ":" + column;
+          let edgeName = "invocation$" + parentTemplateModule + "$" + invocationTarget + "$" + line + ":" + column;
           if (this.allInvocations[edgeName]) { 
               return; 
             }
-          let edgeDef = `${line}:${column}`;
-          this.graph.setEdge(parentTemplateModule, invocationTarget!, edgeDef, edgeDef);
+          this.graph.setEdge(parentTemplateModule, invocationTarget!, edgeName, edgeName);
           this.allInvocations[edgeName] = invocation;
         }
 
         let templateDef: Template | null = null;
         if (this.registry.lookup(templateModule)) {
             if (foundContext) {
-                this.graph.setEdge(contextModule, templateModule, "context");
+                this.graph.setEdge(contextModule, templateModule, "context", "context");
             }
             templateDef = this.registry.lookup(templateModule).definition as Template;
             templateDef.invocations.forEach((i) => {
@@ -79,36 +79,41 @@ export class NewRenderGraph {
         }      
     }
 
+    // TODO: This method needs to go away and use the property graph instead
     invocations(componentModule: string, attrName: string) {
         return ["foo"];
     }
 
-    parentTemplates(componentModule: string) {
-        //direct predecessors could be either components or templates
-        let preds = this.graph.predecessors(componentModule);
-        let isTemplate = (p) => p.split(":")[0] === "template";
-        let [directTemplates, [context]] = _.partition(preds!, isTemplate);
-
-        let contextTemplates = this.graph.predecessors(context)!.filter(isTemplate);
-        let allTemplates = directTemplates.concat(contextTemplates);
-        return allTemplates.map((t) => {
-            let edgeLabel = this.graph.edge(t, componentModule);
-            return [this.registry.lookup(t).filePath, edgeLabel].join(':');
+    /**
+     * low-level fn used by invocationSites
+     * @param nodeName 
+     */
+    invocationsForNode(nodeName: string): TemplateInvocation[] {
+        let inEdges = this.graph.inEdges(nodeName)!;
+        let invs = _.filter(inEdges, (e) => e.name!.match(/invocation/));
+        return invs.map((i) => {
+            return this.allInvocations[i.name!];
         })
-    } 
+    }   
 
-    invocationSites(componentModule: string) {
-        //direct predecessors could be either components or templates
-        let preds = this.graph.predecessors(componentModule);
-        let isTemplate = (p) => p.split(":")[0] === "template";
-        let [directTemplates, [context]] = _.partition(preds!, isTemplate);
-
-        let contextTemplates = this.graph.predecessors(context)!.filter(isTemplate);
-        let allTemplates = directTemplates.concat(contextTemplates);
-        return allTemplates.map((t) => {
-            let edgeLabel = this.graph.edge(t, componentModule);
-            return [this.registry.lookup(t).filePath, edgeLabel].join(':');
-        })
+    /**
+     *  template <-context- component <-inv- template
+     *  template <-inv- template
+     */
+    invocationSites(templateModule: string): TemplateInvocation[] {
+       // componentModule must be a 'template:*' for the time being.
+       
+       let inEdges = this.graph.inEdges(templateModule)!;
+       let contextEdge = _.find(inEdges, (e) => e.name === "context");
+       let edges: Edge[];
+       if (contextEdge) {
+       // if the template has a rendering context get the invocation edges
+       // for that thing.
+         return this.invocationsForNode(contextEdge.v);
+       } else {
+       // if no context, get the invocation edges for the template
+         return this.invocationsForNode(templateModule);
+       }
     }  
     createDotGraph(moduleName: string, recurse?: boolean, collapseInvocations?: boolean) {
         let nodes = this.graph.nodes(); 

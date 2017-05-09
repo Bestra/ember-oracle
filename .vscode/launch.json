@@ -20,7 +20,7 @@
 			},
 			"console": "integratedTerminal",
 			"sourceMaps": true,
-			"outFiles": []
+			"outFiles": ["${workspaceRoot}/dist/**/*.js"]
 		},
 		{
 			"name": "CallGraph",
@@ -60,18 +60,6 @@
 			},
 			"console": "integratedTerminal",
 			"sourceMaps": true
-		},
-		{
-			"name": "Attach",
-			"type": "node",
-			"request": "attach",
-			"port": 5858,
-			"address": "localhost",
-			"restart": false,
-			"sourceMaps": false,
-			"outFiles": [],
-			"localRoot": "${workspaceRoot}",
-			"remoteRoot": null
 		}
 	]
 }

@@ -15,9 +15,9 @@ import {
 
 type Position = htmlBars.Position;
 type FilePosition = { filePath: string; position: Position };
-interface Dict<T> {
-    [index: string]: T
-}
+    interface Dict<T> {
+        [index: string]: T
+    }
 
 /**
  * Defineable things have a `definedAt`, the position of their definition in the rendering context,
@@ -30,6 +30,9 @@ export interface Defineable {
 }
 
 export interface TemplateInvocation {
+    /**
+     * The location of the mustache in the handlebars template
+     */
     invokedAt:
     {
         filePath: string,
@@ -89,9 +92,14 @@ class TemplateMember<T> implements Defineable {
  */
 export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
 {
+    /**
+     * the path the mustache is called with;
+     * for {{foo-bar}} the pathString is "foo-bar"
+     */
     get pathString() {
         return this.astNode.path.original;
     }
+
     get attrs() {
         let pairs = this.astNode.hash.pairs;
         return _.map(pairs, 'key');
