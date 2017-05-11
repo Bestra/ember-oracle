@@ -109,6 +109,11 @@ returns a vector of filenames formatted 'path:line:column'"
   (eo--parse-response
    (eo-http-get "templates/parents" `(("path" . ,(buffer-file-name))))))
 
+(defun eo--goto-position (file line column)
+  (find-file file)
+  (goto-line line)
+  (move-to-column column))
+
 ;;;;;;;;;;;;;
 ;;;; Completion
 
@@ -132,6 +137,21 @@ This replacement uses a completion system according to
   (interactive)
   (find-file (eo-find-alternate-file)))
 
+(defun eo-goto-definition ()
+  "switches the current buffer to the alternate file"
+  (interactive)
+  (let* ((response (eo-http-get "templates/definition"
+                                `(("path" . ,(buffer-file-name))
+                                  ("line" . ,(number-to-string (line-number-at-pos)))
+                                  ("column" . ,(number-to-string (current-column))))))
+         (parsed (eo--parse-response response))
+         (path (plist-get parsed ':filePath))
+         (position-info (plist-get parsed ':position))
+         (line (plist-get position-info ':line))
+         (column (plist-get position-info ':column)))
+    (eo--goto-position path line column)
+    ))
+
 (defun eo-show-parent-templates ()
   "dislplays a list of parent templates"
   (interactive)
@@ -140,9 +160,7 @@ This replacement uses a completion system according to
                                       candidates))
          (parts (split-string choice ":")))
     (cl-destructuring-bind (file line column) parts
-      (find-file file)
-      (goto-line (string-to-number line))
-      (move-to-column (string-to-number column)))))
+      (eo--goto-position file line column))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;; Keyboard Commands
