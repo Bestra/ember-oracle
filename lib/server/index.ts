@@ -51,7 +51,7 @@ export default class Server {
         });
 
         router.get('/templates/definition', function (ctx, next) {
-            console.log(ctx.query);
+            console.log("finding definition for symbol in template at: ", ctx.query);
             let { path, line, column, attr, format } = ctx.query;
             let { position, invokedAttrs } = app.definitionForSymbolInTemplate(path, line, column, attr)
 

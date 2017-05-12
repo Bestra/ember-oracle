@@ -138,7 +138,7 @@ This replacement uses a completion system according to
   (find-file (eo-find-alternate-file)))
 
 (defun eo-goto-definition ()
-  "switches the current buffer to the alternate file"
+  "finds the 'definition' location of the symbol under the cursor"
   (interactive)
   (let* ((response (eo-http-get "templates/definition"
                                 `(("path" . ,(buffer-file-name))
@@ -167,6 +167,8 @@ This replacement uses a completion system according to
 (defvar ember-oracle-commands-map (make-sparse-keymap))
 (define-key ember-oracle-commands-map (kbd "f a") #'eo-goto-alternate-file)
 (define-key ember-oracle-commands-map (kbd "f p") #'eo-show-parent-templates)
+(define-key ember-oracle-commands-map (kbd "f d") #'eo-goto-definition)
+
 
 (defvar ember-oracle-mode-keymap (make-sparse-keymap))
 
