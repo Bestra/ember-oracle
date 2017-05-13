@@ -12,7 +12,16 @@ import { readFileSync } from 'fs';
 import { EmberClass, EmptyEmberClass } from '../ember';
 import { Template } from '../hbs'
 import * as assert from 'assert';
+import { ModuleDefinition } from "./types";
 
+type ModuleType =  'component' |
+    'controller' |
+    'router' |
+    'service' |
+    'template' |
+    'route' |
+    'view' |
+    'mixin' 
 let SUPPORTED_MODULES = {
     'component': '.js',
     'controller': '.js',
@@ -29,22 +38,12 @@ interface Dict<T> {
 }
 
 
-type RegistryEntry = { filePath; definition; };
-type RegistryType = Dict<RegistryEntry>;
+type RegistryEntry = { filePath; definition: ModuleDefinition; };
 
 export default class Registry {
     resolver: Resolver;
-    registeredFiles: Dict<string> = {};
-    registeredModules: Dict<RegistryType> = {
-        component: {},
-        controller: {},
-        router: {},
-        service: {},
-        template: {},
-        route: {},
-        view: {},
-        mixin: {}
-    }
+    registeredFiles: Dict<string> = {}
+    private registeredModules: Dict<RegistryEntry> = {}
 
     constructor(resolver) {
         this.resolver = resolver;
@@ -60,21 +59,20 @@ export default class Registry {
         // console.log("registering ", filePath);
         this.registeredFiles[filePath] = moduleName;
         let [moduleType, modulePath] = moduleName.split(':');
-        if (this.registeredModules[moduleType]) {
-            let def;
-            if (moduleType === 'template') {
-                def = new Template(moduleName, filePath, this);
-            } else {
-                def = new EmberClass(moduleName, filePath, this);
-            }
-            this.registeredModules[moduleType][modulePath] = { filePath, definition: def };
-            return moduleName;
+        let def;
+        if (moduleType === 'template') {
+            def = new Template(moduleName, filePath, this);
         } else {
-            return null;
+            def = new EmberClass(moduleName, filePath, this);
         }
+        this.registeredModules[moduleName] = { filePath, definition: def };
+        return moduleName;
     }
+
     registerManually(moduleName, filePath) {
-        this.registeredModules['imports'][moduleName] = { filePath, definition: new EmberClass(moduleName, filePath, this) }
+        let manualName = 'imports:' + moduleName
+        this.registeredModules[manualName] = { filePath, definition: new EmberClass(moduleName, filePath, this) }
+        this.registeredFiles[filePath] = manualName;
     }
 
     /**
@@ -113,11 +111,7 @@ export default class Registry {
      * Only retrieve items from the registry by module name.
      */
     lookup(moduleName: string): RegistryEntry {
-        let [moduleType, modulePath] = moduleName.split(':');
-        let modules = this.registeredModules[moduleType];
-
-        assert.ok(modules, `modules for type: ${moduleType} should exist`);
-        return this.registeredModules[moduleType][modulePath];
+        return this.registeredModules[moduleName];
 
     }
 
@@ -163,11 +157,18 @@ export default class Registry {
         return readFileSync(this.lookup(moduleName).filePath, 'utf8');
     }
 
-    allModules(type: string) {
-        return this.registeredModules[type];
+    allModules(desiredType?: ModuleType): RegistryEntry[] {
+        if (desiredType) {
+            return _.filter(this.registeredModules, (v, key) => {
+                let type = key!.split(':')[0];
+                return type === desiredType;
+            });
+        } else {
+            return _.values(this.registeredModules);
+        }
     }
 
-    moduleNames(type: string) {
+    moduleNames(type: ModuleType) {
         return _.map(this.allModules(type), (val, key) => {
             return val.definition.moduleName.split(':')[1];
         });

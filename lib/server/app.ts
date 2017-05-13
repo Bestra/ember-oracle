@@ -90,6 +90,7 @@ export default class Application {
         ).filter((a) => { return !a.match(/not provided/) });
         return {position, invokedAttrs}
     }
+    
     findContextModule(filePath: string) {
         let m = this.registry.lookupModuleName(filePath);
         let contextModule = this.resolver.templateContext(m);

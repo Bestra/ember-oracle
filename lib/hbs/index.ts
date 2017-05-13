@@ -5,6 +5,7 @@ import * as ember from '../ember'
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
 import EmberClass from '../ember/emberClass'
+import { ModuleDefinition } from '../util/types'
 
 import * as _ from 'lodash'
 import {
@@ -40,7 +41,16 @@ export interface TemplateInvocation {
     }
     astNode: htmlBars.ASTNode;
     invokedAttr: (attrName: string) => string;
+    /**
+     * The module name of the invoked template, either for a component or partial. 
+     * {{foo-bar}} will be "template:components/foo-bar",
+     * {{partial "foo-bar"}} will be "templates:foo-bar" (the same as moduleName)
+     */
     templateModule: string;
+    /**
+     * The module name of the invoked component/partial. {{foo-bar}} will be "component:foo-bar",
+     * {{partial "foo-bar"}} will be "templates:foo-bar"
+     */
     moduleName: string;
     isPartial: boolean;
     props: {}
@@ -237,7 +247,8 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
     }
 
     blockParamDefinition(index): FilePosition {
-        let position = this.registry.lookup(this.templateModule).definition.getYieldPosition(index)
+        let def = this.registry.lookup(this.templateModule).definition as Template;
+        let position = def.getYieldPosition(index)
         return {
             filePath: this.templateFilePath,
             position: position
@@ -345,7 +356,7 @@ class NoContext {
  * Template is the represenation of a .hbs file.
  * Every template has a rendering context, even if it's an implicit one.
  */
-export class Template {
+export class Template implements ModuleDefinition {
     moduleName: string;
     filePath: string;
     registry: Registry;

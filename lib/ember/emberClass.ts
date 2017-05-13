@@ -6,6 +6,7 @@ import { parseJs } from '../util/parser'
 
 import * as AST from '../ember/ast'
 import Registry from '../util/registry'
+import { ModuleDefinition } from "../util/types";
 type Position = { line: number; column: number }
 type Prop = { [index: string]: Position }
 interface Dict<T> {
@@ -35,7 +36,7 @@ function emptyDict<T>(): Dict<T> {
     return {};
 }
 
-export default class EmberClass {
+export default class EmberClass implements ModuleDefinition {
     moduleName: string;
     filePath: string;
     registry: Registry;
@@ -79,7 +80,7 @@ export default class EmberClass {
                     console.log("Unable to find module for ", name, " looking in ", aPath);
                     return new EmptyEmberClass("component:ember", this.registry);
                 } else {
-                    return this.registry.lookupByAppPath(aPath).definition;
+                    return this.registry.lookupByAppPath(aPath).definition as EmberClass;
                 }
             }).value()
 
@@ -100,7 +101,7 @@ export default class EmberClass {
 
             return new EmptyEmberClass("component:ember", this.registry);
         } else {
-            return this.registry.lookupByAppPath(importPath).definition;
+            return this.registry.lookupByAppPath(importPath).definition as EmberClass;
         }
     }
 
