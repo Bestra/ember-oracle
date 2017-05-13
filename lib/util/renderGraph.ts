@@ -1,7 +1,7 @@
 import Registry from './registry'
 import Resolver from './resolver'
 import { Graph, Edge } from 'graphlib'
-import { Dict } from '../util/types'
+import { Dict, ModuleName } from '../util/types'
 import * as _ from 'lodash'
 import * as fs from 'fs'
 import { Template, TemplateInvocation } from '../hbs'
@@ -37,24 +37,24 @@ export class NewRenderGraph {
     // 2. Connect rendering contexts (js files) to templates
     // 3. For every invocation, connect the template to either the invoked js file or template
     // 4. Connect js files to superclasses and mixins
-    addNode(moduleName: string) {
-        this.graph.setNode(moduleName);
+    addNode(moduleName: ModuleName) {
+        this.graph.setNode(<string>moduleName);
     }
 
-    connectRenderingContext(templateModuleName: string) {
+    connectRenderingContext(templateModuleName: ModuleName) {
         let c = this.registry.templateContext(templateModuleName);
         if (this.graph.node(c)) {
             this.graph.setEdge(c, templateModuleName, "context");
         }
     }
-    connectInvocations(parentTemplateModuleName: string) {
+    connectInvocations(parentTemplateModuleName: ModuleName) {
         let template = this.registry.lookup(parentTemplateModuleName).definition as Template;
         let invocations = template.invocations;
         _.forEach(invocations, (i) => this.connectInvocation(parentTemplateModuleName, i));
         process.stderr.write(invocations.length.toString())
     }
 
-    connectInvocation(parentTemplateModuleName: string, invocation: TemplateInvocation) {
+    connectInvocation(parentTemplateModuleName: ModuleName, invocation: TemplateInvocation) {
         // 3 cases
         // 1. parent i-> context -> template
         // 2. parent i-> context

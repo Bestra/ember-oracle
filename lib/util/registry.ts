@@ -12,7 +12,7 @@ import { readFileSync } from 'fs';
 import { EmberClass, EmptyEmberClass } from '../ember';
 import { Template } from '../hbs'
 import * as assert from 'assert';
-import { ModuleDefinition } from "./types";
+import { ModuleDefinition, ModuleName, FilePath } from "./types";
 
 type ModuleType =  'component' |
     'controller' |
@@ -38,11 +38,11 @@ interface Dict<T> {
 }
 
 
-type RegistryEntry = { filePath; definition: ModuleDefinition; };
+type RegistryEntry = { filePath: FilePath; definition: ModuleDefinition; };
 
 export default class Registry {
     resolver: Resolver;
-    registeredFiles: Dict<string> = {}
+    registeredFiles: Dict<ModuleName> = {}
     private registeredModules: Dict<RegistryEntry> = {}
 
     constructor(resolver) {
@@ -54,7 +54,7 @@ export default class Registry {
      * @param filePath 
      * @param appRoot 
      */
-    registerPath(filePath: string, appRoot: string) {
+    registerPath(filePath: FilePath, appRoot: string) {
         let moduleName = this.resolver.moduleNameFromPath(filePath, appRoot);
         // console.log("registering ", filePath);
         this.registeredFiles[filePath] = moduleName;
@@ -70,7 +70,7 @@ export default class Registry {
     }
 
     registerManually(moduleName, filePath) {
-        let manualName = 'imports:' + moduleName
+        let manualName = <ModuleName>`imports:${moduleName}`
         this.registeredModules[manualName] = { filePath, definition: new EmberClass(moduleName, filePath, this) }
         this.registeredFiles[filePath] = manualName;
     }
@@ -79,7 +79,7 @@ export default class Registry {
      * Delegates to the resolver, does not actually confirm
      * whether the context module exists
      */
-    templateContext(templateModule: string): string {
+    templateContext(templateModule: ModuleName): ModuleName {
         return this.resolver.templateContext(templateModule);
     }
 
@@ -110,12 +110,12 @@ export default class Registry {
     /**
      * Only retrieve items from the registry by module name.
      */
-    lookup(moduleName: string): RegistryEntry {
+    lookup(moduleName: ModuleName): RegistryEntry {
         return this.registeredModules[moduleName];
 
     }
 
-    confirmExistance(moduleName: string) {
+    confirmExistance(moduleName: ModuleName) {
         return this.lookup(moduleName) ? moduleName : null
     }
 
@@ -134,8 +134,8 @@ export default class Registry {
      * this function returns a null-object representing the component
      */
     findComponent(helperName: string) {
-        let componentModuleName = `component:${helperName}`;
-        let componentTemplateModuleName = `template:components/${helperName}`;
+        let componentModuleName = <ModuleName>`component:${helperName}`;
+        let componentTemplateModuleName = <ModuleName>`template:components/${helperName}`;
 
         let componentModule = this.lookup(componentModuleName);
 
@@ -153,7 +153,7 @@ export default class Registry {
         }
     };
 
-    fileContents(moduleName: string) {
+    fileContents(moduleName: ModuleName) {
         return readFileSync(this.lookup(moduleName).filePath, 'utf8');
     }
 

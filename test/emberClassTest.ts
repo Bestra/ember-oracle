@@ -4,6 +4,7 @@ import * as assert from 'assert'
 import Registry from '../lib/util/registry'
 import Resolver from '../lib/util/resolver'
 import EmberClass from '../lib/ember/emberClass'
+import { ModuleName } from "../lib/util/types";
 afterEach(function () {
   td.reset();
 })
@@ -14,7 +15,7 @@ describe('EmberClass', function () {
   beforeEach(function () {
     registry = td.object(new Registry(new Resolver()));
 
-    subject = new EmberClass("component:child", "testFile", registry);
+    subject = new EmberClass(<ModuleName>"component:child", "testFile", registry);
   });
 
   describe('component is an Ember subclass', function () {
@@ -74,7 +75,7 @@ describe('EmberClass', function () {
       let parentSrc =
         `export default Ember.Component.extend({parentProp: "foo"})`
       td.when(registry.lookupByAppPath('my-app/components/parent')).thenReturn(
-        { definition: new EmberClass("component:parent", "parentPath", registry) }
+        { definition: new EmberClass(<ModuleName>"component:parent", "parentPath", registry) }
       )
       td.when(registry.fileContents("component:child")).thenReturn(childSrc);
       td.when(registry.fileContents("component:parent")).thenReturn(parentSrc);

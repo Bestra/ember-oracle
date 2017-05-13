@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as assert from 'assert'
 import * as _ from 'lodash'
+import { ModuleName } from "./types";
 
 function singularize(str: string) {
     return str.slice(0, str.length - 1);
@@ -38,7 +39,7 @@ export default class Resolver {
         return path.join(this.rootPath, relativePath);
     }
     // Note that all paths should be relative starting with appRootName
-    moduleNameFromPath(absoluteFilePath: string, rootPath: string): string {
+    moduleNameFromPath(absoluteFilePath: string, rootPath: string): ModuleName {
         // TODO: make sure app/ is removed too
         let relativePath = absoluteFilePath.split(rootPath)[1];
 
@@ -50,7 +51,7 @@ export default class Resolver {
         }
     }
 
-    moduleFromPodPath(relativePodPath: string): string {
+    moduleFromPodPath(relativePodPath: string): ModuleName {
         let modulePath;
         let prefix = path.basename(relativePodPath).split('.')[0]
         if (prefix === "component") {
@@ -59,11 +60,11 @@ export default class Resolver {
             modulePath = path.dirname(relativePodPath.split('pods/')[1]);
         }
 
-        return prefix + ":" + modulePath;
+        return prefix + ":" + modulePath as ModuleName;
     }
 
     //assuming segments like 'app/routes/foo/bar.js'
-    moduleFromClassicPath(relativeClassicPath: string): string {
+    moduleFromClassicPath(relativeClassicPath: string): ModuleName {
         let parts = _.reject(
             relativeClassicPath.split(/[\/\.]/),
             p => p === 'app' || p === ''
@@ -73,20 +74,20 @@ export default class Resolver {
         let lastIndex = modulePath.length - 1;
         modulePath[lastIndex] = modulePath[lastIndex].replace(/^-/, ''); // replace leading hyphen on partials
 
-        return singularize(prefix) + ":" + modulePath.join('/');
+        return singularize(prefix) + ":" + modulePath.join('/') as ModuleName;
     }
 
     normalizePartialName(path: string) {
         return path;
     }
 
-    associatedTemplate(moduleName: string) {
+    associatedTemplate(moduleName: ModuleName): ModuleName | null {
         let [root, path] = moduleName.split(':');
         let newRoot = "template:"
         if (root === "controller") {
-            return newRoot + path;
+            return <ModuleName>(newRoot + path);
         } else if (root === "component") {
-            return newRoot + "components/" + path;
+            return <ModuleName>(newRoot + "components/" + path);
         } else {
             return null;
         }
@@ -101,13 +102,13 @@ export default class Resolver {
         }
     }
 
-    templateContext(templateModule: string): string {
+    templateContext(templateModule: ModuleName): ModuleName {
         let [_root, path] = templateModule.split(':');
         let newRoot = path.match("components") ? "component:" : "controller:";
-        return newRoot + path.replace("components/", "");
+        return <ModuleName>(newRoot + path.replace("components/", ""));
     }
 
-    componentTemplate(componentModule: string) {
-        return `template:components/${componentModule}`;
+    componentTemplate(componentModule: string): ModuleName {
+        return <ModuleName>`template:components/${componentModule}`;
     }
 }

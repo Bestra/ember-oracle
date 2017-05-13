@@ -6,7 +6,7 @@ import { parseJs } from '../util/parser'
 
 import * as AST from '../ember/ast'
 import Registry from '../util/registry'
-import { ModuleDefinition } from "../util/types";
+import { ModuleDefinition, ModuleName, FilePath } from "../util/types";
 type Position = { line: number; column: number }
 type Prop = { [index: string]: Position }
 interface Dict<T> {
@@ -17,7 +17,7 @@ class Property {
     parentClass: EmberClass;
     position: Position
     name: string;
-    filePath: string;
+    filePath: FilePath;
     consumedKeys: string[];
 
     constructor(astNode, parentClass: EmberClass) {
@@ -37,11 +37,11 @@ function emptyDict<T>(): Dict<T> {
 }
 
 export default class EmberClass implements ModuleDefinition {
-    moduleName: string;
-    filePath: string;
+    moduleName: ModuleName;
+    filePath: FilePath;
     registry: Registry;
 
-    constructor(moduleName: string, filePath: string, registry: Registry) {
+    constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry) {
         this.moduleName = moduleName;
         this.filePath = filePath;
         this.registry = registry;

@@ -5,7 +5,7 @@ import * as ember from '../ember'
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
 import EmberClass from '../ember/emberClass'
-import { ModuleDefinition } from '../util/types'
+import { ModuleDefinition, ModuleName } from '../util/types'
 
 import * as _ from 'lodash'
 import {
@@ -46,12 +46,12 @@ export interface TemplateInvocation {
      * {{foo-bar}} will be "template:components/foo-bar",
      * {{partial "foo-bar"}} will be "templates:foo-bar" (the same as moduleName)
      */
-    templateModule: string;
+    templateModule: ModuleName;
     /**
      * The module name of the invoked component/partial. {{foo-bar}} will be "component:foo-bar",
      * {{partial "foo-bar"}} will be "templates:foo-bar"
      */
-    moduleName: string;
+    moduleName: ModuleName;
     isPartial: boolean;
     props: {}
 }
@@ -128,7 +128,7 @@ export class Mustache extends TemplateMember<htmlBars.MustacheStatement>
  */
 export class Partial extends Mustache implements TemplateInvocation {
     get templateModule() {
-        return 'template:' + this.templatePath;
+        return <ModuleName>('template:' + this.templatePath);
     }
     get isPartial() {
         return true
@@ -214,7 +214,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
     }
 
     get moduleName() {
-        return 'component:' + this.pathString;
+        return <ModuleName>`component:${this.pathString}`;
     }
 
     get component() {
@@ -357,7 +357,7 @@ class NoContext {
  * Every template has a rendering context, even if it's an implicit one.
  */
 export class Template implements ModuleDefinition {
-    moduleName: string;
+    moduleName: ModuleName;
     filePath: string;
     registry: Registry;
     get renderingContext() {
@@ -365,7 +365,7 @@ export class Template implements ModuleDefinition {
             || new NoContext(this.moduleName);
     }
 
-    constructor(moduleName: string, filePath: string, registry: Registry) {
+    constructor(moduleName: ModuleName, filePath: string, registry: Registry) {
         this.moduleName = moduleName;
         this.filePath = filePath;
         this.registry = registry;

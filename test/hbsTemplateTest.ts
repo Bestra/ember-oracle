@@ -4,6 +4,7 @@ import * as hbs from '../lib/hbs'
 import Registry from '../lib/util/registry'
 import Resolver from '../lib/util/resolver'
 import { Template } from '../lib/hbs'
+import { ModuleName } from "../lib/util/types";
 afterEach(function () {
   td.reset();
 })
@@ -12,7 +13,7 @@ describe('Template', function () {
   var registry, subject;
   beforeEach(function () {
     registry = td.object(new Registry(new Resolver()));
-    subject = new Template("template:foo", "foo", registry);
+    subject = new Template(<ModuleName>"template:foo", "foo", registry);
   })
   describe('template src is available in the registry', function () {
     beforeEach(function () {
