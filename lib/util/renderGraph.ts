@@ -7,7 +7,7 @@ import * as fs from 'fs'
 import { Template, TemplateInvocation } from '../hbs'
 import { EmberClass } from '../ember'
 
-export class NewRenderGraph {
+export class RenderGraph {
     registry: Registry;
     graph = new Graph({ multigraph: true });
     allInvocations: Dict<TemplateInvocation> = {};

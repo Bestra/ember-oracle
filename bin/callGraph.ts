@@ -1,7 +1,7 @@
 import Registry from '../lib/util/registry'
 import Resolver from '../lib/util/resolver'
 import Application from '../lib/server/app'
-import { NewRenderGraph } from '../lib/util/renderGraph'
+import { RenderGraph } from '../lib/util/renderGraph'
 import * as _ from 'lodash'
 import * as fs from 'fs'
 import { Template } from '../lib/hbs'
@@ -12,7 +12,7 @@ let res = new Resolver();
 let reg = new Registry(res);
 new Application(res, reg).init(dir, engines);
 console.log('creating graph')
-let renderGraph = new NewRenderGraph(reg);
+let renderGraph = new RenderGraph(reg);
 renderGraph.init();
 
 let output = renderGraph.createDotGraph('template:components/manuscript-new');
