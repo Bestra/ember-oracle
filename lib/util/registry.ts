@@ -14,14 +14,16 @@ import { Template } from '../hbs'
 import * as assert from 'assert';
 import { ModuleDefinition, ModuleName, FilePath } from "./types";
 
-type ModuleType =  'component' |
+export type ModuleType =  'component' |
     'controller' |
     'router' |
     'service' |
     'template' |
     'route' |
     'view' |
+    'model' |
     'mixin' 
+
 let SUPPORTED_MODULES = {
     'component': '.js',
     'controller': '.js',
@@ -30,13 +32,13 @@ let SUPPORTED_MODULES = {
     'template': '.hbs',
     'route': '.js',
     'view:': '.js',
+    'model': '.js',
     'mixin': '.js'
 };
 
 interface Dict<T> {
     [index: string]: T
 }
-
 
 type RegistryEntry = { filePath: FilePath; definition: ModuleDefinition; };
 
@@ -174,7 +176,3 @@ export default class Registry {
         });
     }
 }
-
-
-
-

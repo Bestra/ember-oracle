@@ -1,4 +1,4 @@
-import Registry from './registry'
+import Registry, { ModuleType } from './registry'
 import Resolver from './resolver'
 import { Graph, Edge } from 'graphlib'
 import { Dict, ModuleName } from '../util/types'
@@ -16,21 +16,35 @@ export class NewRenderGraph {
     }
     init() {
         console.log("adding all nodes");
-        _.forEach(this.registry.allModules(), (key) => {
+       this.registry.allModules().forEach((key) => {
             this.addNode(key.definition.moduleName)
             process.stderr.write('.')
 
         })
         console.log("connecting rendering contexts");
-        _.forEach(this.registry.allModules('template'), (key) => {
+        this.registry.allModules('template').forEach((key) => {
             this.connectRenderingContext(key.definition.moduleName);
             process.stderr.write('.')
         });
         console.log("connecting invocations");
-        _.forEach(this.registry.allModules('template'), (key) => {
+        this.registry.allModules('template').forEach((key) => {
             this.connectInvocations(key.definition.moduleName);
         });
         console.log("all done");
+        ['component',
+            'controller',
+            'router',
+            'service',
+            'route',
+            'view',
+            'model',
+            'mixin'].forEach((t) => {
+                this.registry.allModules(<ModuleType>t).forEach((key) => {
+                  let module = key.definition as EmberClass;
+                  this.connectSuperClass(module);
+                  this.connectMixins(module);
+                })
+            })
     }
 
     // 1. Add nodes into the graph for everything in the registry
@@ -69,12 +83,17 @@ export class NewRenderGraph {
         this.allInvocations[edgeName] = invocation;
     }
 
-    connectSuperClass(moduleName: string) {
-
+    connectSuperClass(module: EmberClass) {
+      let s = module.superClass;
+      if (s) {
+          this.graph.setEdge(s.moduleName, module.moduleName, "subclass");
+      }
     }
 
-    connectMixins(moduleName: string) {
-
+    connectMixins(module: EmberClass) {
+        module.mixins.forEach((m) => {
+            this.graph.setEdge(m.moduleName, module.moduleName, "mixin");
+        })
     }
 
     // TODO: This method needs to go away and use the property graph instead

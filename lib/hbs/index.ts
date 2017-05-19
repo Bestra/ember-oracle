@@ -5,7 +5,7 @@ import * as ember from '../ember'
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
 import EmberClass from '../ember/emberClass'
-import { ModuleDefinition, ModuleName } from '../util/types'
+import { ModuleDefinition, ModuleName, FilePath } from '../util/types'
 
 import * as _ from 'lodash'
 import {
@@ -15,7 +15,7 @@ import {
 } from './util'
 
 type Position = htmlBars.Position;
-type FilePosition = { filePath: string; position: Position };
+type FilePosition = { filePath: FilePath; position: Position };
     interface Dict<T> {
         [index: string]: T
     }
@@ -358,14 +358,14 @@ class NoContext {
  */
 export class Template implements ModuleDefinition {
     moduleName: ModuleName;
-    filePath: string;
+    filePath: FilePath;
     registry: Registry;
     get renderingContext() {
         return this.registry.lookup(this.registry.resolver.templateContext(this.moduleName))
             || new NoContext(this.moduleName);
     }
 
-    constructor(moduleName: ModuleName, filePath: string, registry: Registry) {
+    constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry) {
         this.moduleName = moduleName;
         this.filePath = filePath;
         this.registry = registry;

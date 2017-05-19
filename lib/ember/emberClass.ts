@@ -153,7 +153,7 @@ export class EmptyEmberClass extends EmberClass {
     }
 
     constructor(moduleName, registry) {
-        super(moduleName, "NO FILE", registry);
+        super(moduleName, <FilePath>"NO FILE", registry);
     }
 
     get properties() {
