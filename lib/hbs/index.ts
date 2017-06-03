@@ -5,7 +5,7 @@ import * as ember from '../ember'
 import Resolver from '../util/resolver'
 import Registry from '../util/registry'
 import EmberClass from '../ember/emberClass'
-import { ModuleDefinition, ModuleName, FilePath } from '../util/types'
+import { ModuleDefinition, ModuleName, FilePath, PropertyGraphNode } from '../util/types'
 
 import * as _ from 'lodash'
 import {
@@ -53,7 +53,7 @@ export interface TemplateInvocation {
      */
     moduleName: ModuleName;
     isPartial: boolean;
-    props: {}
+    props: Dict<htmlBars.Param>;
 }
 
 class NullPosition implements Defineable {
@@ -81,7 +81,7 @@ class TemplateMember<T> implements Defineable {
     registry: Registry;
     resolver: Resolver;
 
-    constructor(template, node) {
+    constructor(template: Template, node: T) {
         this.containingTemplate = template;
         this.astNode = node;
         this.registry = this.containingTemplate.registry;
@@ -271,7 +271,7 @@ export class Action extends TemplateMember<htmlBars.Callable> {
         let action = context.actions[this.name]
 
         return {
-            filePath: action.filePath,
+            filePath: action.parentClass.filePath,
             position: action.position
         }
     }
@@ -283,12 +283,40 @@ export class Action extends TemplateMember<htmlBars.Callable> {
 
 }
 
-
-export class Path extends TemplateMember<htmlBars.PathExpression> {
-    astNode: htmlBars.PathExpression;
-
+export class PropertyInvocation implements PropertyGraphNode {
+    invocation: TemplateInvocation;
+    key;
+    value;
+    nodeId: number;
+    nodeType: "propertyInvocation" = "propertyInvocation"
+     get nodeModuleName() {
+        return this.invocation.moduleName;
+    }
+    constructor(i: TemplateInvocation, key: string, value: any) {
+        this.invocation = i;
+        this.key = key;
+        this.value = value;
+    }
+    get propertyGraphKey() {
+          return `${this.nodeType}$${this.nodeId}`;;
+    }
+    
+}
+export class Path
+    extends TemplateMember<htmlBars.PathExpression> implements PropertyGraphNode
+    {
+    
     get root() {
         return this.astNode.parts[0];
+    }
+    astNode: htmlBars.PathExpression;
+    nodeId: number;
+    nodeType: "boundProperty" = "boundProperty"
+    get propertyGraphKey(): string {
+        return `${this.nodeType}$${this.nodeId}`;;
+    }
+    get nodeModuleName() {
+        return this.containingTemplate.moduleName;
     }
 
     get invokedWith() {
@@ -305,7 +333,7 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
         let prop = context.properties[this.root];
         if (prop) {
             return {
-                filePath: prop.filePath,
+                filePath: prop.parentClass.filePath,
                 position: prop.position
 
             }
@@ -316,18 +344,34 @@ export class Path extends TemplateMember<htmlBars.PathExpression> {
     }
 }
 
-export class BlockParam extends Path {
-    index;
+/**
+ * BlockParams are those yielded by a block helper.
+ * {{#each foos as |foo|}} <-- foo is a block param
+ */
+export class BlockParam 
+extends TemplateMember<htmlBars.BlockStatement> 
+implements PropertyGraphNode {
+    index: number;
+    name: string;
     block: Block;
-
-    constructor(template, node, block, index) {
-        super(template, node);
-        this.block = block;
+    nodeId: number;
+    nodeType: "blockParam" = "blockParam"
+    get nodeModuleName() {
+        return this.containingTemplate.moduleName;
+    }
+    constructor(template: Template, name: string, block: Block, index: number) {
+        super(template, block.astNode);
         this.index = index;
+        this.name = name;
+        this.block = block;
     }
 
     get definedAt() {
-        return this.block.blockParamDefinition(this.index);
+        return null
+    }
+  
+    get propertyGraphKey(): string {
+       return `${this.nodeType}$${this.nodeId}`;;
     }
 }
 
@@ -423,6 +467,16 @@ export class Template implements ModuleDefinition {
      * foo: ['foo.bar', 'foo.baz']
      */
     get props(): Dict<string[]> {
+        return this.boundPaths.reduce((accum, p) => {
+            if (!accum[p.root]) { accum[p.root] = []; }
+
+            accum[p.root].push(p.astNode.original);
+            return accum;
+        }, {} as Dict<string[]>);
+
+    }
+
+    get boundPaths(): Path[] {
         let isHelper = (n) => {
             if (n.type === "SubExpression" ||
                 n.type === "MustacheStatement" ||
@@ -442,21 +496,12 @@ export class Template implements ModuleDefinition {
             "yield",
             "outlet"
         ]
-        let realPaths = _(allPaths)
+        return _(allPaths)
             .reject(p => !!findContainingComponent(this, p))
             .reject(p => !!_.find(helpers, h => h.path === p))
             .reject(p => _.includes(SPECIAL_PATH_NAMES, p.original))
             .map(p => new Path(this, p))
-            .reject(p => this.blockParamFromPath(p))
             .value()
-
-        return realPaths.reduce((accum, p) => {
-            if (!accum[p.root]) { accum[p.root] = []; }
-
-            accum[p.root].push(p.astNode.original);
-            return accum;
-        }, {} as Dict<string[]>);
-
     }
 
     get partials() {
@@ -529,21 +574,22 @@ export class Template implements ModuleDefinition {
 
     blockParamFromPath(path: Path): BlockParam | null {
         let foundBlock = _.find(this.blocks, (block => {
-            return containsPosition(block.astNode, path.astNode.loc.start) &&
+            let contains = containsPosition(block.astNode, path.astNode.loc.start);
+            return contains &&
                 block.blockParams.indexOf(path.root) > -1
         }));
 
-        if (!!foundBlock) {
-            return new BlockParam(
+        if (foundBlock) {
+            let b = new BlockParam(
                 this,
-                path.astNode,
+                path.root,
                 foundBlock,
                 foundBlock.blockParams.indexOf(path.root))
+            return b;
         } else {
             return null;
         }
     }
-
 
     parsePosition(position: Position): Defineable {
         console.log("looking up position ", position)
@@ -565,7 +611,7 @@ export class Template implements ModuleDefinition {
             }
 
         }
-        let actionExpr = this.cachedNodes['All'].filter(isActionExpr)[0];
+        let actionExpr = this.cachedNodes['All'].filter(isActionExpr)[0] as any;
         if (actionExpr) {
             return new Action(this, actionExpr);
         } else if (pathExpr) {

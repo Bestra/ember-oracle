@@ -12,6 +12,31 @@ export interface ObjectProperty extends ESTree.Property {
     key: ESTree.Identifier;
 }
 
+/**
+ * Finds `this.get` and `this.set`
+ * @param astNode 
+ * @param s 
+ */
+export function findThisGets(astNode, s: "get" | "set") {
+    let isGet = _.matches({
+        callee: {
+            object: { type: "ThisExpression" },
+            property: { name: s }
+        }
+    });
+    let nodes: ESTree.CallExpression[] = [];
+    recast.visit(astNode, {
+        visitCallExpression(path) {
+            let getter = path.node;
+            if (isGet(getter)) {
+                nodes.push(getter);
+            }
+            this.traverse(path);
+        }
+    });
+    return nodes;
+}
+
 export function findConsumedKeys(astNode): string[] {
     let isGet = _.matches({
         callee: {

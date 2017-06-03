@@ -92,8 +92,8 @@ describe('Template', function () {
           );
         let result = parse<hbs.BlockParam>(1, 29)
         assertType(result, 'BlockParam');
-        assert.equal(result.root, 'foo', 'still acts like a path');
-        assertType(result.block, 'Block');
+        assert.equal(result.name, 'foo', 'has a name property');
+        assertType(result.astNode, 'Block');
         assert.equal(result.block.pathString, 'each')
       })
       it('returns a block param for dashed helpers', function () {

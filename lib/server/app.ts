@@ -6,6 +6,7 @@ import Resolver from '../util/resolver'
 import Registry from '../util/registry'
 import { ok } from 'assert'
 import { Template } from '../hbs';
+import PropertyGraph from "../util/propertyGraph";
 
 class StringWrapper {
     string: string;
@@ -36,11 +37,13 @@ export default class Application {
     resolver: Resolver;
     registry: Registry;
     renderGraph: RenderGraph;
+    propertyGraph: PropertyGraph;
 
     constructor(resolver: Resolver, registry: Registry) {
         this.resolver = resolver;
         this.registry = registry;
         this.renderGraph =  new RenderGraph(this.registry);
+        this.propertyGraph = new PropertyGraph(this.registry, this.renderGraph);
     }
 
     init(aPath: string, enginePaths: string[] = []) {
@@ -61,10 +64,14 @@ export default class Application {
         let t2 = Date.now();
 
         this.renderGraph.init();
-                let t3 = Date.now();
+        let t3 = Date.now();
+        this.propertyGraph.init();
+        let t4 = Date.now();
 
         console.log("init in ", t2 - t1);
-        console.log("graph in ", t3 - t2);
+        console.log("renderGraph in ", t3 - t2);
+        console.log("propertyGraph in ", t4 - t3);
+
         global["App"] = this;
 
     }
@@ -123,7 +130,7 @@ export default class Application {
         }
     }
 
-    dotGraph(query) {
+    renderDotGraph(query) {
         let templateModule;
         if (query.path) {
             let fullPath = path.resolve(query.path);
@@ -137,8 +144,14 @@ export default class Application {
         return this.renderGraph.createDotGraph(templateModule, true, collapse);
     }
 
-    svgGraph(query) {
-        let dot = this.dotGraph(query);
+    renderSvgGraph(query) {
+        let dot = this.renderDotGraph(query);
+        console.log(dot);
+        return childProcess.execSync('dot -Tsvg', { input: dot });
+    }
+
+    propertySvgGraph(query) {
+        let dot = this.propertyGraph.createDotGraph()
         return childProcess.execSync('dot -Tsvg', { input: dot });
     }
 }

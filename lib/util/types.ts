@@ -9,3 +9,18 @@ export interface ModuleDefinition {
 export interface Dict<T> {
     [index: string]: T
 }
+
+export type PropertyGraphNodeType = 
+"boundProperty" |
+ "propertyGet" | 
+ "propertySet" |
+ "propertyInvocation" |
+ "prototypeProperty" |
+ "blockParam"
+
+export interface PropertyGraphNode {
+    propertyGraphKey: string;
+    nodeType: PropertyGraphNodeType;
+    nodeModuleName: ModuleName;
+    nodeId: number;
+}

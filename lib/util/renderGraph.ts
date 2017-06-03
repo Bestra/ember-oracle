@@ -31,20 +31,10 @@ export class RenderGraph {
             this.connectInvocations(key.definition.moduleName);
         });
         console.log("all done");
-        ['component',
-            'controller',
-            'router',
-            'service',
-            'route',
-            'view',
-            'model',
-            'mixin'].forEach((t) => {
-                this.registry.allModules(<ModuleType>t).forEach((key) => {
-                  let module = key.definition as EmberClass;
-                  this.connectSuperClass(module);
-                  this.connectMixins(module);
-                })
-            })
+        this.registry.allEmberModules().forEach((m) => {
+            this.connectSuperClass(m);
+            this.connectMixins(m);
+        })
     }
 
     // 1. Add nodes into the graph for everything in the registry
@@ -57,8 +47,8 @@ export class RenderGraph {
 
     connectRenderingContext(templateModuleName: ModuleName) {
         let c = this.registry.templateContext(templateModuleName);
-        if (this.graph.node(c)) {
-            this.graph.setEdge(c, templateModuleName, "context");
+        if (this.graph.hasNode(c)) {
+            this.graph.setEdge(c, templateModuleName, "context", "context");
         }
     }
     connectInvocations(parentTemplateModuleName: ModuleName) {
@@ -132,14 +122,15 @@ export class RenderGraph {
             return this.invocationsForNode(templateModule);
         }
     }
+
     createDotGraph(moduleName: string, recurse?: boolean, collapseInvocations?: boolean) {
         let nodes = this.graph.nodes();
         let edges = this.graph.edges();
         let output = [
             "digraph {",
             "node [shape=record];",
-            ...nodes.map(k => `"${k}"`),
-            ...edges.map(k => `"${k.v}" -> "${k.w}"`),
+            ...nodes.map(k => `"${k}";`),
+            ...edges.map(k => `"${k.v}" -> "${k.w}"[label="${this.graph.edge(k)}"];`),
             "}"
         ].join('\n');
         return output;

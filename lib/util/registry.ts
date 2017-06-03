@@ -170,6 +170,21 @@ export default class Registry {
         }
     }
 
+    allEmberModules() {
+        return _(
+            ['component',
+                'controller',
+                'router',
+                'service',
+                'route',
+                'view',
+                'model',
+                'mixin']).map((t) => {
+                    return this.allModules(<ModuleType>t)
+                    .map(m => m.definition)
+                }).flatten().value() as EmberClass[];
+    }
+
     moduleNames(type: ModuleType) {
         return _.map(this.allModules(type), (val, key) => {
             return val.definition.moduleName.split(':')[1];

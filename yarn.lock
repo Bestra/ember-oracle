@@ -850,6 +850,10 @@ path-to-regexp@^1.1.1:
   dependencies:
     isarray "0.0.1"
 
+prettier@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-1.4.1.tgz#3526cc46aea102e980db5b70cabe2020910ef142"
+
 private@^0.1.6, private@~0.1.5:
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/private/-/private-0.1.7.tgz#68ce5e8a1ef0a23bb570cc28537b5332aba63ef1"

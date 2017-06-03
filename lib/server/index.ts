@@ -105,15 +105,24 @@ export default class Server {
             }
         });
 
-        router.get('/graph.dot', function (ctx, next) {
+        router.get('/renderGraph.dot', function (ctx, next) {
             console.log(ctx.query);
-            let dot = app.dotGraph(ctx.query);
+            let dot = app.renderDotGraph(ctx.query);
             ctx.body = dot;
 
         });
-        router.get('/graph.svg', function (ctx, next) {
+        router.get('/renderGraph.svg', function (ctx, next) {
             console.log(ctx.query);
-            let svg = app.svgGraph(ctx.query);
+            let svg = app.renderSvgGraph(ctx.query);
+
+            ctx.body = svg;
+            ctx.type = "image/svg+xml"
+
+        }); 
+        
+        router.get('/propertyGraph.svg', function (ctx, next) {
+            console.log(ctx.query);
+            let svg = app.propertySvgGraph(ctx.query);
 
             ctx.body = svg;
             ctx.type = "image/svg+xml"

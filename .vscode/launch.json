@@ -2,12 +2,33 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Server",
+			"name": "Full Server",
 			"type": "node",
 			"request": "launch",
 			"program": "${workspaceRoot}/dist/bin/server.js",
 			"stopOnEntry": false,
 			"args": ["/Users/bestra/mh/tahi/client/"
+			],
+			"cwd": "${workspaceRoot}",
+			"preLaunchTask": null,
+			"runtimeExecutable": null,
+			"runtimeArgs": [
+				"--nolazy"
+			],
+			"env": {
+				"NODE_ENV": "development"
+			},
+			"console": "integratedTerminal",
+			"sourceMaps": true,
+			"outFiles": ["${workspaceRoot}/dist/**/*.js"]
+		},
+		{
+			"name": "Sample app",
+			"type": "node",
+			"request": "launch",
+			"program": "${workspaceRoot}/dist/bin/server.js",
+			"stopOnEntry": false,
+			"args": ["/Users/bestra/personal/my-app/"
 			],
 			"cwd": "${workspaceRoot}",
 			"preLaunchTask": null,
