@@ -1,18 +1,24 @@
 export default function transformer(file, api) {
   const j = api.jscodeshift;
-  const {expression, statement, statements} = j.template;
+  const { expression, statement, statements } = j.template;
 
   return j(file.source)
-    .find(j.CallExpression, {callee: {object: {name: "server"},
-                                      property:{name: "respondWith"}}})
+    .find(j.CallExpression, {
+      callee: {
+        object: { name: "server" },
+        property: { name: "respondWith" }
+      }
+    })
     .replaceWith(p => {
       let [requestType, requestPath, responseArgs] = p.value.arguments;
-      if (!responseArgs.elements) { return p.value }
-      let [status, ...otherArgs] = responseArgs.elements;
-      let responseText = otherArgs[otherArgs.length -1];
-      let stringifyFilter = {
-        callee: {object: {name: "JSON"}, property: {name: "stringify"}}
+      if (!responseArgs.elements) {
+        return p.value;
       }
+      let [status, ...otherArgs] = responseArgs.elements;
+      let responseText = otherArgs[otherArgs.length - 1];
+      let stringifyFilter = {
+        callee: { object: { name: "JSON" }, property: { name: "stringify" } }
+      };
 
       let newResponse;
       if (j.match(responseText, stringifyFilter)) {
@@ -33,7 +39,6 @@ export default function transformer(file, api) {
                             responseText: ${newResponse}
                           })`;
       }
-
     })
     .toSource();
-};
+}
