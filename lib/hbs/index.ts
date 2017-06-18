@@ -288,9 +288,14 @@ export class Action extends TemplateMember<htmlBars.Callable> {
   }
 }
 
+
 export class PropertyInvocation implements PropertyGraphNode {
   invocation: TemplateInvocation;
-  key;
+  /**
+   * The name of the property being set by the invocation
+   * For {{foo-bar baz="buzz"}}, 'key' would be 'baz'
+   */
+  key: string;
   value;
   nodeId: number;
   nodeType: 'propertyInvocation' = 'propertyInvocation';
@@ -305,6 +310,12 @@ export class PropertyInvocation implements PropertyGraphNode {
   get propertyGraphKey() {
     return `${this.nodeType}$${this.nodeId}`;
   }
+   get dotGraphKey() {
+    return `${this.nodeType}$
+    ${this.key}$
+    ${this.invocation.invokedAt.position.line}$
+    ${this.invocation.invokedAt.position.column}`;
+  }
 }
 export class Path extends TemplateMember<htmlBars.PathExpression>
   implements PropertyGraphNode {
@@ -316,6 +327,9 @@ export class Path extends TemplateMember<htmlBars.PathExpression>
   nodeType: 'boundProperty' = 'boundProperty';
   get propertyGraphKey(): string {
     return `${this.nodeType}$${this.nodeId}`;
+  }
+  get dotGraphKey(): string {
+    return `${this.nodeType}$${this.root}$${this.astNode.loc.start.line}$${this.astNode.loc.start.column}`;
   }
   get nodeModuleName() {
     return this.containingTemplate.moduleName;
@@ -371,6 +385,9 @@ export class BlockParam extends TemplateMember<htmlBars.BlockStatement>
 
   get propertyGraphKey(): string {
     return `${this.nodeType}$${this.nodeId}`;
+  }
+  get dotGraphKey(): string {
+    return `${this.nodeType}$${this.name}$${this.astNode.loc.start.line}$${this.astNode.loc.start.column}`;
   }
 }
 

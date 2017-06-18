@@ -30,6 +30,10 @@ class PropertyGet implements PropertyGraphNode {
   get propertyGraphKey() {
     return `${this.nodeType}$${this.nodeId}`;
   }
+  get dotGraphKey() {
+    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position.column}`;
+  }
+
 }
 
 class PropertySet implements PropertyGraphNode {
@@ -44,6 +48,9 @@ class PropertySet implements PropertyGraphNode {
   get propertyGraphKey() {
     return `${this.nodeType}$${this.nodeId}`;
   }
+  get dotGraphKey() {
+    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position.column}`;
+  }
 }
 
 export class PrototypeProperty implements PropertyGraphNode {
@@ -56,6 +63,9 @@ export class PrototypeProperty implements PropertyGraphNode {
   nodeType: 'prototypeProperty' = 'prototypeProperty';
   get nodeModuleName() {
     return this.parentClass.moduleName;
+  }
+  get dotGraphKey() {
+    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position.column}`;
   }
 
   constructor(astNode, parentClass: EmberClass, isImplicit = false) {
@@ -84,6 +94,9 @@ export class ImplicitPrototypeProperty implements PropertyGraphNode {
   }
   get propertyGraphKey() {
     return `${this.nodeType}$${this.nodeId}`;
+  }
+  get dotGraphKey() {
+    return `implicitPrototypeProperty$${this.name}`;
   }
 }
 

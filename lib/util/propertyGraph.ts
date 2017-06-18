@@ -1,25 +1,25 @@
-import Registry from './registry';
-import { Graph } from 'graphlib';
+import Registry from "./registry";
+import { Graph } from "graphlib";
 import {
   Dict,
   ModuleName,
   PropertyGraphNode,
   PropertyGraphNodeType
-} from './types';
-import { RenderGraph } from './renderGraph';
-import { Template, PropertyInvocation, Path } from '../hbs/index';
+} from "./types";
+import { RenderGraph } from "./renderGraph";
+import { Template, PropertyInvocation, Path } from "../hbs/index";
 import EmberClass, {
   PrototypeProperty,
   ImplicitPrototypeProperty
-} from '../ember/emberClass';
-import * as _ from 'lodash';
+} from "../ember/emberClass";
+import * as _ from "lodash";
 
 export default class PropertyGraph {
   registry: Registry;
   renderGraph: RenderGraph;
   nodeIndex: { [P in PropertyGraphNodeType]: Dict<PropertyGraphNode[]> };
   nodeId = 0;
-  allNodes = {};
+  allNodes: Dict<PropertyGraphNode> = {};
 
   graph = new Graph({ multigraph: false });
   constructor(registry: Registry, renderGraph: RenderGraph) {
@@ -37,7 +37,7 @@ export default class PropertyGraph {
   }
 
   init() {
-    this.registry.allModules('template').forEach(t => {
+    this.registry.allModules("template").forEach(t => {
       this.addTemplateBindings(t.definition as Template);
       this.addPropertyInvocations(t.definition as Template);
     });
@@ -62,17 +62,21 @@ export default class PropertyGraph {
     });
   }
 
+  /**
+   * Connect invocations to prototype properties, or create an implicit
+   * prototype property
+   */
   connectInvokedAttrs() {
-    this.getNodesOfType<PropertyInvocation>('propertyInvocation').forEach(p => {
+    this.getNodesOfType<PropertyInvocation>("propertyInvocation").forEach(p => {
       let target = p.invocation.moduleName;
       //if the target is a template, do nothing for now.
-      if (target.match('template:')) {
+      if (target.match("template:")) {
         return;
       }
 
       //if the target is an ember module, find or create the PrototypeProperty
       //on it.
-      let props = this.getNodes<PrototypeProperty>('prototypeProperty', target);
+      let props = this.getNodes<PrototypeProperty>("prototypeProperty", target);
       let targetProp =
         _.find(props, a => {
           a.name === p.key;
@@ -80,15 +84,20 @@ export default class PropertyGraph {
       this.graph.setEdge(
         p.propertyGraphKey,
         targetProp.propertyGraphKey,
-        'invocation'
+        "invocation"
       );
     });
     // connect the propertyInvocation to the corresponding name on the context,
     // or create a new implicitProperty node associated to the rendering context
   }
 
+  /**
+   * Not implemented
+   */
   connectYields() {}
-
+  /**
+   * Not implemented
+   */
   connectGetsToSets() {}
 
   connectPropertySources(boundProperty) {
@@ -99,7 +108,7 @@ export default class PropertyGraph {
   }
 
   connectBindingsToContexts() {
-    this.getNodesOfType<Path>('boundProperty').forEach(boundProp => {
+    this.getNodesOfType<Path>("boundProperty").forEach(boundProp => {
       this.connectPropertySources(boundProp);
     });
   }
@@ -156,15 +165,34 @@ export default class PropertyGraph {
   }
 
   createDotGraph() {
-    let nodes = this.graph.nodes();
+    let nodesByModule = _(this.allNodes)
+      .values<PropertyGraphNode>()
+      .groupBy(n => {
+        return n.nodeModuleName;
+      })
+      .value();
     let edges = this.graph.edges();
+    let subgraphs = _.map(nodesByModule, (v, k) => {
+      return [
+        `subgraph cluster_${k!.replace(/(-|:|\/)/g, '_')} {`,
+        `label = "${k}"`,
+        ...v.map(node => `"${node.dotGraphKey}"`),
+        "}"
+      ].join("\n");
+    });
     let output = [
-      'digraph {',
-      'node [shape=record];',
-      ...nodes.map(k => `"${k}"`),
-      ...edges.map(k => `"${k.v}" -> "${k.w}"`),
-      '}'
-    ].join('\n');
+      "digraph {",
+      "node [shape=record];",
+      ...subgraphs,
+
+      ...edges.map(k => {
+        let v = this.allNodes[k.v];
+        let w = this.allNodes[k.w];
+        return `"${v.dotGraphKey}" -> "${w.dotGraphKey}"`;
+      }),
+      "}"
+    ].join("\n");
+    console.log(output);
     return output;
   }
 }

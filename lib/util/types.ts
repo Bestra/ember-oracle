@@ -20,6 +20,7 @@ export type PropertyGraphNodeType =
 
 export interface PropertyGraphNode {
   propertyGraphKey: string;
+  dotGraphKey: string;
   nodeType: PropertyGraphNodeType;
   nodeModuleName: ModuleName;
   nodeId: number;
