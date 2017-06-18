@@ -69,7 +69,7 @@
 			"request": "launch",
 			"program": "${workspaceRoot}/node_modules/.bin/_mocha",
 			"stopOnEntry": false,
-			"args": ["./test/index.js"],
+			"args": ["./dist/test/index.js"],
 			"cwd": "${workspaceRoot}",
 			"preLaunchTask": null,
 			"runtimeExecutable": null,
