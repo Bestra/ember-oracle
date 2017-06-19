@@ -19,6 +19,9 @@ export default class PropertyGraph {
   renderGraph: RenderGraph;
   nodeIndex: { [P in PropertyGraphNodeType]: Dict<PropertyGraphNode[]> };
   nodeId = 0;
+  /**
+   * every node in the property graph, regardless of type
+   */
   allNodes: Dict<PropertyGraphNode> = {};
 
   graph = new Graph({ multigraph: false });
@@ -113,10 +116,17 @@ export default class PropertyGraph {
     });
   }
 
+  /**
+   * Returns all modes of a given type
+   */
   getNodesOfType<T>(nodeType: PropertyGraphNodeType): T[] {
     return _(this.nodeIndex[nodeType]).values().flatten().value() as T[];
   }
 
+  /**
+   * 
+   * Returns all nodes of a given type and module name
+   */
   getNodes<T>(nodeType, moduleName: ModuleName): T[] {
     let existingArray = this.nodeIndex[nodeType][moduleName];
     if (existingArray === undefined) {
@@ -126,6 +136,12 @@ export default class PropertyGraph {
       return existingArray;
     }
   }
+
+  /**
+   * 
+   * Adds a PropertyGraph node both the underlying graph structure
+   * and to the node indices
+   */
   addNode(n: PropertyGraphNode) {
     n.nodeId = this.nodeId;
     this.graph.setNode(n.propertyGraphKey);
