@@ -416,6 +416,7 @@ export class Template implements ModuleDefinition {
   moduleName: ModuleName;
   filePath: FilePath;
   registry: Registry;
+  src: string;
   get renderingContext() {
     return (
       this.registry.lookup(
@@ -424,10 +425,20 @@ export class Template implements ModuleDefinition {
     );
   }
 
-  constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry) {
+  constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry, src: string) {
     this.moduleName = moduleName;
     this.filePath = filePath;
     this.registry = registry;
+    this.src = src;
+  }
+
+  _astNode: htmlBars.Program;
+  get astNode() {
+    if (this._astNode) {
+      return this._astNode;
+    }
+    this._astNode = htmlBars.parse(this.src);
+    return this._astNode;
   }
 
   _cache: {
@@ -439,6 +450,10 @@ export class Template implements ModuleDefinition {
     PathExpression: htmlBars.PathExpression[];
     All: htmlBars.ASTNode[];
   };
+
+  /**
+   * Different AST node types are cached for quicker access later
+   */
   get cachedNodes() {
     if (!!this._cache) {
       return this._cache;
@@ -574,16 +589,6 @@ export class Template implements ModuleDefinition {
         return new Block(this, node);
       }
     });
-  }
-
-  _astNode: htmlBars.Program;
-  get astNode() {
-    if (this._astNode) {
-      return this._astNode;
-    }
-    let src = this.registry.fileContents(this.moduleName);
-    this._astNode = htmlBars.parse(src);
-    return this._astNode;
   }
 
   getYieldPosition(index) {

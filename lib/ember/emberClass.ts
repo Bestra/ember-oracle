@@ -110,12 +110,25 @@ export default class EmberClass implements ModuleDefinition {
   moduleName: ModuleName;
   filePath: FilePath;
   registry: Registry;
+  src: string;
 
-  constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry) {
+  constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry, src: string) {
     this.moduleName = moduleName;
     this.filePath = filePath;
     this.registry = registry;
+    this.src = src;
   }
+
+  _ast: any;
+  get ast() {
+    if (this._ast) {
+      return this._ast;
+    }
+
+    this._ast = parseJs(this.src);
+    return this._ast;
+  }
+
   extractProps(ast, parent: EmberClass) {
     let dict: Dict<PrototypeProperty> = {};
 
@@ -202,17 +215,6 @@ export default class EmberClass implements ModuleDefinition {
     return this.extractMixins(this.ast);
   }
 
-  _ast: any;
-  get ast() {
-    if (this._ast) {
-      return this._ast;
-    }
-
-    let src = this.registry.fileContents(this.moduleName);
-    this._ast = parseJs(src);
-    return this._ast;
-  }
-
   get properties(): Dict<PrototypeProperty> {
     let superProps = this.superClass ? this.superClass.properties : {};
     let mixinProps = this.mixins.map(m => m.properties);
@@ -280,7 +282,7 @@ export class EmptyEmberClass extends EmberClass {
   }
 
   constructor(moduleName, registry) {
-    super(moduleName, <FilePath>'NO FILE', registry);
+    super(moduleName, <FilePath>'NO FILE', registry, '');
   }
 
   get properties() {

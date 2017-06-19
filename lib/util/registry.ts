@@ -63,23 +63,16 @@ export default class Registry {
     this.registeredFiles[filePath] = moduleName;
     let [moduleType, modulePath] = moduleName.split(':');
     let def;
+    let fileSrc = readFileSync(filePath, 'utf8');
     if (moduleType === 'template') {
-      def = new Template(moduleName, filePath, this);
+      def = new Template(moduleName, filePath, this, fileSrc);
     } else {
-      def = new EmberClass(moduleName, filePath, this);
+      def = new EmberClass(moduleName, filePath, this, fileSrc);
     }
     this.registeredModules[moduleName] = { filePath, definition: def };
     return moduleName;
   }
 
-  registerManually(moduleName, filePath) {
-    let manualName = <ModuleName>`imports:${moduleName}`;
-    this.registeredModules[manualName] = {
-      filePath,
-      definition: new EmberClass(moduleName, filePath, this)
-    };
-    this.registeredFiles[filePath] = manualName;
-  }
 
   /**
      * Delegates to the resolver, does not actually confirm
