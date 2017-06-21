@@ -59,20 +59,27 @@ export default class Registry {
      */
   registerPath(filePath: FilePath, appRoot: string) {
     let moduleName = this.resolver.moduleNameFromPath(filePath, appRoot);
+    let fileSrc = readFileSync(filePath, 'utf8');
+    return this.registerModule(filePath, moduleName, fileSrc);
+  }
+
+  /**
+   * Low level method called from `registerPath`, also used in testing
+   * to bypass the file system when adding modules to the registry
+   */
+  registerModule(filePath: FilePath, moduleName: ModuleName, src: string) {
     // console.log("registering ", filePath);
     this.registeredFiles[filePath] = moduleName;
     let [moduleType, modulePath] = moduleName.split(':');
     let def;
-    let fileSrc = readFileSync(filePath, 'utf8');
     if (moduleType === 'template') {
-      def = new Template(moduleName, filePath, this, fileSrc);
+      def = new Template(moduleName, filePath, this, src);
     } else {
-      def = new EmberClass(moduleName, filePath, this, fileSrc);
+      def = new EmberClass(moduleName, filePath, this, src);
     }
     this.registeredModules[moduleName] = { filePath, definition: def };
-    return moduleName;
+    return def;
   }
-
 
   /**
      * Delegates to the resolver, does not actually confirm

@@ -18,7 +18,7 @@ interface Dict<T> {
   [index: string]: T;
 }
 
-class PropertyGet implements PropertyGraphNode {
+export class PropertyGet implements PropertyGraphNode {
   parentClass: EmberClass;
   position: Position;
   name: string;
@@ -36,7 +36,7 @@ class PropertyGet implements PropertyGraphNode {
 
 }
 
-class PropertySet implements PropertyGraphNode {
+export class PropertySet implements PropertyGraphNode {
   parentClass: EmberClass;
   position: Position;
   name: string;

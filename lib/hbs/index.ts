@@ -52,6 +52,10 @@ export interface TemplateInvocation {
      * {{partial "foo-bar"}} will be "templates:foo-bar"
      */
   moduleName: ModuleName;
+  /**
+   * The name of the template module where the the invocation is actually written.
+   */
+  parentModule: ModuleName;
   isPartial: boolean;
   props: Dict<htmlBars.Param>;
 }
@@ -134,7 +138,9 @@ export class Partial extends Mustache implements TemplateInvocation {
   get isPartial() {
     return true;
   }
-
+  get parentModule() {
+    return this.containingTemplate.moduleName;
+  }
   get moduleName() {
     return this.templateModule;
   }
@@ -214,6 +220,9 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
   get isPartial() {
     return false;
   }
+  get parentModule() {
+    return this.containingTemplate.moduleName;
+  }
 
   get moduleName() {
     return <ModuleName>`component:${this.pathString}`;
@@ -288,7 +297,6 @@ export class Action extends TemplateMember<htmlBars.Callable> {
   }
 }
 
-
 export class PropertyInvocation implements PropertyGraphNode {
   invocation: TemplateInvocation;
   /**
@@ -300,7 +308,7 @@ export class PropertyInvocation implements PropertyGraphNode {
   nodeId: number;
   nodeType: 'propertyInvocation' = 'propertyInvocation';
   get nodeModuleName() {
-    return this.invocation.moduleName;
+    return this.invocation.parentModule;
   }
   constructor(i: TemplateInvocation, key: string, value: any) {
     this.invocation = i;
@@ -310,11 +318,13 @@ export class PropertyInvocation implements PropertyGraphNode {
   get propertyGraphKey() {
     return `${this.nodeType}$${this.nodeId}`;
   }
-   get dotGraphKey() {
-    return `${this.nodeType}$
-    ${this.key}$
-    ${this.invocation.invokedAt.position.line}$
-    ${this.invocation.invokedAt.position.column}`;
+  get dotGraphKey() {
+    return [
+      this.nodeType,
+      this.key,
+      this.invocation.invokedAt.position.line,
+      this.invocation.invokedAt.position.column
+    ].join('$');
   }
 }
 export class Path extends TemplateMember<htmlBars.PathExpression>
@@ -329,7 +339,8 @@ export class Path extends TemplateMember<htmlBars.PathExpression>
     return `${this.nodeType}$${this.nodeId}`;
   }
   get dotGraphKey(): string {
-    return `${this.nodeType}$${this.root}$${this.astNode.loc.start.line}$${this.astNode.loc.start.column}`;
+    return `${this.nodeType}$${this.root}$${this.astNode.loc.start.line}$${this
+      .astNode.loc.start.column}`;
   }
   get nodeModuleName() {
     return this.containingTemplate.moduleName;
@@ -387,7 +398,8 @@ export class BlockParam extends TemplateMember<htmlBars.BlockStatement>
     return `${this.nodeType}$${this.nodeId}`;
   }
   get dotGraphKey(): string {
-    return `${this.nodeType}$${this.name}$${this.astNode.loc.start.line}$${this.astNode.loc.start.column}`;
+    return `${this.nodeType}$${this.name}$${this.astNode.loc.start.line}$${this
+      .astNode.loc.start.column}`;
   }
 }
 
@@ -425,7 +437,12 @@ export class Template implements ModuleDefinition {
     );
   }
 
-  constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry, src: string) {
+  constructor(
+    moduleName: ModuleName,
+    filePath: FilePath,
+    registry: Registry,
+    src: string
+  ) {
     this.moduleName = moduleName;
     this.filePath = filePath;
     this.registry = registry;

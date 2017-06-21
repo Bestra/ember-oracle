@@ -1,18 +1,18 @@
-import Registry from "./registry";
-import { Graph } from "graphlib";
+import Registry from './registry';
+import { Graph } from 'graphlib';
 import {
   Dict,
   ModuleName,
   PropertyGraphNode,
   PropertyGraphNodeType
-} from "./types";
-import { RenderGraph } from "./renderGraph";
-import { Template, PropertyInvocation, Path } from "../hbs/index";
+} from './types';
+import { RenderGraph } from './renderGraph';
+import { Template, PropertyInvocation, Path } from '../hbs/index';
 import EmberClass, {
   PrototypeProperty,
   ImplicitPrototypeProperty
-} from "../ember/emberClass";
-import * as _ from "lodash";
+} from '../ember/emberClass';
+import * as _ from 'lodash';
 
 export default class PropertyGraph {
   registry: Registry;
@@ -40,7 +40,7 @@ export default class PropertyGraph {
   }
 
   init() {
-    this.registry.allModules("template").forEach(t => {
+    this.registry.allModules('template').forEach(t => {
       this.addTemplateBindings(t.definition as Template);
       this.addPropertyInvocations(t.definition as Template);
     });
@@ -57,10 +57,10 @@ export default class PropertyGraph {
 
   addPropertyInvocations(template: Template) {
     // for each invocation
-    template.invocations.forEach(i => {
+    return template.invocations.map(i => {
       let { line, column } = i.invokedAt.position;
-      _.forEach(i.props, (v, k) => {
-        this.addNode(new PropertyInvocation(i, k!, v));
+      return _.map(i.props, (v, k) => {
+        return this.addNode(new PropertyInvocation(i, k!, v));
       });
     });
   }
@@ -70,25 +70,29 @@ export default class PropertyGraph {
    * prototype property
    */
   connectInvokedAttrs() {
-    this.getNodesOfType<PropertyInvocation>("propertyInvocation").forEach(p => {
+    return this.getNodesOfType<PropertyInvocation>(
+      'propertyInvocation'
+    ).map(p => {
       let target = p.invocation.moduleName;
       //if the target is a template, do nothing for now.
-      if (target.match("template:")) {
-        return;
+      if (target.match('template:')) {
+        return [];
       }
 
       //if the target is an ember module, find or create the PrototypeProperty
       //on it.
-      let props = this.getNodes<PrototypeProperty>("prototypeProperty", target);
+      let props = this.getNodes<PrototypeProperty>('prototypeProperty', target);
       let targetProp =
         _.find(props, a => {
-          a.name === p.key;
+          return a.name === p.key;
         }) || this.addNode(new ImplicitPrototypeProperty(p.key, target));
       this.graph.setEdge(
         p.propertyGraphKey,
         targetProp.propertyGraphKey,
-        "invocation"
+        'invocation'
       );
+
+      return [p, targetProp];
     });
     // connect the propertyInvocation to the corresponding name on the context,
     // or create a new implicitProperty node associated to the rendering context
@@ -111,7 +115,7 @@ export default class PropertyGraph {
   }
 
   connectBindingsToContexts() {
-    this.getNodesOfType<Path>("boundProperty").forEach(boundProp => {
+    this.getNodesOfType<Path>('boundProperty').forEach(boundProp => {
       this.connectPropertySources(boundProp);
     });
   }
@@ -154,28 +158,33 @@ export default class PropertyGraph {
   findNode(nodeType: PropertyGraphNodeType, fn) {}
 
   addEmberProps(e: EmberClass) {
-    e.props.forEach(p => {
-      this.addNode(p);
-    });
-    e.propertyGets.forEach(p => {
-      this.addNode(p);
-    });
-    e.propertySets.forEach(p => {
-      this.addNode(p);
-    });
+    return {
+      prototypeProps: e.props.map(p => {
+        return this.addNode(p);
+      }),
+      propertyGets: e.propertyGets.map(p => {
+        return this.addNode(p);
+      }),
+      propertySets: e.propertySets.map(p => {
+        return this.addNode(p);
+      })
+    };
   }
 
   addTemplateBindings(t: Template) {
     //1. add nodes for all the props in the template
     //2. add nodes for block params
     //3. connect block params to their props
-    t.boundPaths.forEach(p => {
-      let pKey = this.addNode(p);
+    return t.boundPaths.map(p => {
+      let pNode = this.addNode(p);
 
       let b = t.blockParamFromPath(p);
       if (b) {
-        this.addNode(b);
+        let bNode = this.addNode(b);
         this.graph.setEdge(b.propertyGraphKey, p.propertyGraphKey);
+        return [bNode, pNode];
+      } else {
+        return [pNode];
       }
     });
   }
@@ -193,12 +202,12 @@ export default class PropertyGraph {
         `subgraph cluster_${k!.replace(/(-|:|\/)/g, '_')} {`,
         `label = "${k}"`,
         ...v.map(node => `"${node.dotGraphKey}"`),
-        "}"
-      ].join("\n");
+        '}'
+      ].join('\n');
     });
     let output = [
-      "digraph {",
-      "node [shape=record];",
+      'digraph {',
+      'node [shape=record];',
       ...subgraphs,
 
       ...edges.map(k => {
@@ -206,8 +215,8 @@ export default class PropertyGraph {
         let w = this.allNodes[k.w];
         return `"${v.dotGraphKey}" -> "${w.dotGraphKey}"`;
       }),
-      "}"
-    ].join("\n");
+      '}'
+    ].join('\n');
     console.log(output);
     return output;
   }

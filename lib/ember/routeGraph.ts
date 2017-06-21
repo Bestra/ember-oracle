@@ -38,12 +38,6 @@ function findChildRoutes(routeFnNode: ESTree.FunctionExpression, parentRoute) {
       name: routeCallNode.arguments[0].value
     };
     child.children = findChildRoutes(routeCallNode, child);
-    console.log(
-      'found a child of ',
-      parentRoute.moduleName,
-      '- ',
-      child.moduleName
-    );
 
     return child;
   });

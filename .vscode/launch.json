@@ -80,7 +80,9 @@
 				"NODE_ENV": "development"
 			},
 			"console": "integratedTerminal",
-			"sourceMaps": true
+			"sourceMaps": true,
+			"outFiles": ["${workspaceRoot}/dist/**/*.js"]
+
 		}
 	]
 }

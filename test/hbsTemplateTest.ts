@@ -76,14 +76,7 @@ describe("Template", function() {
       let parse = function<T extends hbs.Defineable>(l, c) {
         return subject.parsePosition({ line: l, column: c }) as T;
       };
-      let assertType = (obj, expected) => {
-        let actualType = Object.getPrototypeOf(obj).constructor.name;
-        assert.equal(
-          actualType,
-          expected,
-          `expected ${actualType} to be of type ${expected}`
-        );
-      };
+      
       it("returns a plain path from anywhere in the path", function() {
         subject = new Template(
           <ModuleName>"template:foo",
@@ -104,9 +97,9 @@ describe("Template", function() {
           `{{#each things as |foo|}}{{foo.bar.baz}}{{/each}}`
         );
         let result = parse<hbs.BlockParam>(1, 29);
-        assertType(result, "BlockParam");
+
+
         assert.equal(result.name, "foo", "has a name property");
-        assertType(result.astNode, "Block");
         assert.equal(result.block.pathString, "each");
       });
       it("returns a block param for dashed helpers", function() {
@@ -118,7 +111,6 @@ describe("Template", function() {
         );
 
         let pathResult = parse<hbs.BlockParam>(1, 40);
-        assertType(pathResult, "BlockParam");
         assert.equal(pathResult.block.pathString, "my-thing");
       });
       it(`returns the containing component if the search hits the mustache path
@@ -132,7 +124,6 @@ describe("Template", function() {
 
         td.when(registry.findComponent("my-component")).thenReturn(true);
         let pathResult = parse<hbs.ComponentInvocation>(1, 5);
-        assertType(pathResult, "ComponentInvocation");
         assert.equal(pathResult.pathString, "my-component");
       });
       describe("actions", function() {
@@ -146,7 +137,6 @@ describe("Template", function() {
             );
 
             let pathResult = parse<hbs.Action>(1, 17);
-            assertType(pathResult, "Action");
             assert.equal(pathResult.name, "clicked");
           });
           it('created via foo=(action "bar")', function() {
@@ -158,7 +148,6 @@ describe("Template", function() {
             );
 
             let pathResult = parse<hbs.Action>(1, 31);
-            assertType(pathResult, "Action");
             assert.equal(pathResult.name, "clicked");
           });
         });
