@@ -41,7 +41,7 @@ interface Dict<T> {
   [index: string]: T;
 }
 
-type RegistryEntry = { filePath: FilePath; definition: ModuleDefinition };
+type RegistryEntry = ModuleDefinition; 
 
 export default class Registry {
   resolver: Resolver;
@@ -77,7 +77,7 @@ export default class Registry {
     } else {
       def = new EmberClass(moduleName, filePath, this, src);
     }
-    this.registeredModules[moduleName] = { filePath, definition: def };
+    this.registeredModules[moduleName] =  def;
     return def;
   }
 
@@ -197,7 +197,7 @@ export default class Registry {
       'mixin'
     ])
       .map(t => {
-        return this.allModules(<ModuleType>t).map(m => m.definition);
+        return this.allModules(<ModuleType>t).map(m => m);
       })
       .flatten()
       .value() as EmberClass[];
@@ -205,7 +205,7 @@ export default class Registry {
 
   moduleNames(type: ModuleType) {
     return _.map(this.allModules(type), (val, key) => {
-      return val.definition.moduleName.split(':')[1];
+      return val.moduleName.split(':')[1];
     });
   }
 }

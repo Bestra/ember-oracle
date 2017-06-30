@@ -79,14 +79,14 @@ export default class Application {
   }
 
   modulePath(moduleName) {
-    return this.registry.lookup(moduleName).definition.filePath;
+    return this.registry.lookup(moduleName).filePath;
   }
 
   definitionForSymbolInTemplate(filePath, line, column, attr) {
     let fullPath = path.resolve(filePath);
     let template = this.registry.lookup(
       this.registry.lookupModuleName(fullPath)
-    ).definition as Template;
+    ) as Template;
 
     let queryPosition = { line: parseInt(line), column: parseInt(column) };
     let defineable = template.parsePosition(queryPosition);

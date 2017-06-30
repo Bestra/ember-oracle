@@ -192,7 +192,7 @@ export default class EmberClass implements ModuleDefinition {
           );
           return new EmptyEmberClass('component:ember', this.registry);
         } else {
-          return this.registry.lookupByAppPath(aPath).definition as EmberClass;
+          return this.registry.lookupByAppPath(aPath) as EmberClass;
         }
       })
       .value();
@@ -225,7 +225,7 @@ export default class EmberClass implements ModuleDefinition {
 
       return new EmptyEmberClass('component:ember', this.registry);
     } else {
-      return this.registry.lookupByAppPath(importPath).definition as EmberClass;
+      return this.registry.lookupByAppPath(importPath) as EmberClass;
     }
   }
 

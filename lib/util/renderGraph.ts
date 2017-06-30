@@ -17,17 +17,17 @@ export class RenderGraph {
   init() {
     console.log('adding all nodes');
     this.registry.allModules().forEach(key => {
-      this.addNode(key.definition.moduleName);
+      this.addNode(key.moduleName);
       process.stderr.write('.');
     });
     console.log('connecting rendering contexts');
     this.registry.allModules('template').forEach(key => {
-      this.connectRenderingContext(key.definition.moduleName);
+      this.connectRenderingContext(key.moduleName);
       process.stderr.write('.');
     });
     console.log('connecting invocations');
     this.registry.allModules('template').forEach(key => {
-      this.connectInvocations(key.definition.moduleName);
+      this.connectInvocations(key.moduleName);
     });
     console.log('all done');
     this.registry.allEmberModules().forEach(m => {
@@ -51,8 +51,7 @@ export class RenderGraph {
     }
   }
   connectInvocations(parentTemplateModuleName: ModuleName) {
-    let template = this.registry.lookup(parentTemplateModuleName)
-      .definition as Template;
+    let template = this.registry.lookup(parentTemplateModuleName) as Template;
     let invocations = template.invocations;
     _.forEach(invocations, i =>
       this.connectInvocation(parentTemplateModuleName, i)

@@ -229,7 +229,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
   }
 
   get component() {
-    return this.registry.lookup(this.moduleName).definition;
+    return this.registry.lookup(this.moduleName);
   }
 
   get invokedAt() {
@@ -259,7 +259,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
   }
 
   blockParamDefinition(index): FilePosition {
-    let def = this.registry.lookup(this.templateModule).definition as Template;
+    let def = this.registry.lookup(this.templateModule) as Template;
     let position = def.getYieldPosition(index);
     return {
       filePath: this.templateFilePath,
@@ -278,8 +278,7 @@ export class Action extends TemplateMember<htmlBars.Callable> {
       this.containingTemplate.moduleName
     );
 
-    let context = this.registry.lookup(contextModule)
-      .definition as ember.EmberClass;
+    let context = this.registry.lookup(contextModule) as ember.EmberClass;
     console.log(
       `looking up ${this.name} action from ${_.keys(context.actions)}`
     );
@@ -371,8 +370,7 @@ export class Path extends TemplateMember<htmlBars.PathExpression>
       this.containingTemplate.moduleName
     );
 
-    let context = this.registry.lookup(contextModule)
-      .definition as ember.EmberClass;
+    let context = this.registry.lookup(contextModule) as ember.EmberClass;
     let prop = context.properties[this.root];
     if (prop) {
       return {

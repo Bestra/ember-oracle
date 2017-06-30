@@ -41,8 +41,8 @@ export default class PropertyGraph {
 
   init() {
     this.registry.allModules('template').forEach(t => {
-      this.addTemplateBindings(t.definition as Template);
-      this.addPropertyInvocations(t.definition as Template);
+      this.addTemplateBindings(t as Template);
+      this.addPropertyInvocations(t as Template);
     });
 
     this.registry.allEmberModules().forEach(m => {

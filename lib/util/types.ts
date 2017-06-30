@@ -4,7 +4,7 @@ export type ModuleName = string & { __moduleNameBrand: any };
 
 export interface ModuleDefinition {
   moduleName: ModuleName;
-  filePath: string;
+  filePath: FilePath;
 }
 export interface Dict<T> {
   [index: string]: T;
