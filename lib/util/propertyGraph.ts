@@ -117,7 +117,15 @@ export default class PropertyGraph {
   /**
    * Not implemented. 
    */
-  connectGetsToSets() {}
+  connectGetsToSets() {
+    return this.getNodesOfType<PropertyGraphNode>('propertyGet').map(n => {
+      let context = n.nodeModuleName;
+      this.connectGettertoSource(n, context);
+      this.renderGraph.allParentClasses(context).forEach(a => {
+        this.connectGettertoSource(n, a);
+      });
+    });
+  }
 
   connectPropertySources(boundProperty: PropertyGraphNode) {
     //for a given bound property:
@@ -130,7 +138,7 @@ export default class PropertyGraph {
     if (context) {
       this.renderGraph.allParentClasses(context).forEach(a => {
         this.connectGettertoSource(boundProperty, a);
-      })
+      });
     }
 
     //go up the tree from the context and look for any other setters that match
@@ -166,6 +174,10 @@ export default class PropertyGraph {
     return newEdge;
   }
 
+  /**
+   * Connects all bound properties to prototype properties if they exist,
+   * including implicit prototype properties created by invocations and setters
+   */
   connectBindingsToContexts() {
     this.getNodesOfType<Path>('boundProperty').forEach(boundProp => {
       this.connectPropertySources(boundProp);
