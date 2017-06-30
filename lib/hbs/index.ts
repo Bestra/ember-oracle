@@ -305,10 +305,12 @@ export class PropertyInvocation implements PropertyGraphNode {
    */
   key: string;
   value;
-  nodeId: number;
   nodeType: 'propertyInvocation' = 'propertyInvocation';
   get nodeModuleName() {
     return this.invocation.parentModule;
+  }
+  get name() {
+    return this.key;
   }
   constructor(i: TemplateInvocation, key: string, value: any) {
     this.invocation = i;
@@ -316,7 +318,13 @@ export class PropertyInvocation implements PropertyGraphNode {
     this.value = value;
   }
   get propertyGraphKey() {
-    return `${this.nodeType}$${this.nodeId}`;
+    return [
+      this.nodeType,
+      this.nodeModuleName,
+      this.name,
+      this.invocation.invokedAt.position.line,
+      this.invocation.invokedAt.position.column
+    ].join('$');
   }
   get dotGraphKey() {
     return [
@@ -333,10 +341,18 @@ export class Path extends TemplateMember<htmlBars.PathExpression>
     return this.astNode.parts[0];
   }
   astNode: htmlBars.PathExpression;
-  nodeId: number;
   nodeType: 'boundProperty' = 'boundProperty';
+  get name() {
+    return this.root;
+  }
   get propertyGraphKey(): string {
-    return `${this.nodeType}$${this.nodeId}`;
+    return [
+      this.nodeType,
+      this.nodeModuleName,
+      this.name,
+      this.astNode.loc.start.line,
+      this.astNode.loc.start.column
+    ].join('$');
   }
   get dotGraphKey(): string {
     return `${this.nodeType}$${this.root}$${this.astNode.loc.start.line}$${this
@@ -378,7 +394,6 @@ export class BlockParam extends TemplateMember<htmlBars.BlockStatement>
   index: number;
   name: string;
   block: Block;
-  nodeId: number;
   nodeType: 'blockParam' = 'blockParam';
   get nodeModuleName() {
     return this.containingTemplate.moduleName;
@@ -395,7 +410,13 @@ export class BlockParam extends TemplateMember<htmlBars.BlockStatement>
   }
 
   get propertyGraphKey(): string {
-    return `${this.nodeType}$${this.nodeId}`;
+    return [
+      this.nodeType,
+      this.nodeModuleName,
+      this.name,
+      this.astNode.loc.start.line,
+      this.astNode.loc.start.column
+    ].join('$');
   }
   get dotGraphKey(): string {
     return `${this.nodeType}$${this.name}$${this.astNode.loc.start.line}$${this

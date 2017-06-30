@@ -10,7 +10,8 @@ import { RenderGraph } from './renderGraph';
 import { Template, PropertyInvocation, Path } from '../hbs/index';
 import EmberClass, {
   PrototypeProperty,
-  ImplicitPrototypeProperty
+  ImplicitPrototypeProperty,
+  PropertySet
 } from '../ember/emberClass';
 import * as _ from 'lodash';
 
@@ -18,7 +19,6 @@ export default class PropertyGraph {
   registry: Registry;
   renderGraph: RenderGraph;
   nodeIndex: { [P in PropertyGraphNodeType]: Dict<PropertyGraphNode[]> };
-  nodeId = 0;
   /**
    * every node in the property graph, regardless of type
    */
@@ -49,6 +49,15 @@ export default class PropertyGraph {
       this.addEmberProps(m);
     });
 
+    _.forEach(this.nodeIndex.propertySet, (sets, moduleName) => {
+     
+    });
+    this.registry.allEmberModules().forEach(m => {
+      // wait to connect setters until all nodes have
+      // been initialized
+      this.connectPropertySets(m);
+    });
+
     this.connectInvokedAttrs();
     this.connectYields();
     this.connectGetsToSets();
@@ -62,6 +71,12 @@ export default class PropertyGraph {
       return _.map(i.props, (v, k) => {
         return this.addNode(new PropertyInvocation(i, k!, v));
       });
+    });
+  }
+
+  connectPropertySets(e: EmberClass) {
+    return e.propertySets.map(p => {
+      return this.connectPropertySetToProto(p, e.moduleName, 'set');
     });
   }
 
@@ -84,8 +99,8 @@ export default class PropertyGraph {
       let props = this.getNodes<PrototypeProperty>('prototypeProperty', target);
       let targetProp =
         _.find(props, a => {
-          return a.name === p.key;
-        }) || this.addNode(new ImplicitPrototypeProperty(p.key, target));
+          return a.name === p.name;
+        }) || this.addNode(new ImplicitPrototypeProperty(p.name, target));
       this.graph.setEdge(
         p.propertyGraphKey,
         targetProp.propertyGraphKey,
@@ -103,11 +118,12 @@ export default class PropertyGraph {
    */
   connectYields() {}
   /**
-   * Not implemented
+   * Not implemented. 
    */
   connectGetsToSets() {}
 
   connectPropertySources(boundProperty) {
+    //for a given bound property:
     //go to the rendering context
     //connect a prototypeAssignment to the boundProperty if there is one
     //connect any setters of that property to the prototypeAssignment
@@ -147,11 +163,9 @@ export default class PropertyGraph {
    * and to the node indices
    */
   addNode(n: PropertyGraphNode) {
-    n.nodeId = this.nodeId;
     this.graph.setNode(n.propertyGraphKey);
     this.allNodes[n.propertyGraphKey] = n;
     this.getNodes(n.nodeType, n.nodeModuleName).push(n);
-    this.nodeId = this.nodeId + 1;
     return n;
   }
 
@@ -169,6 +183,24 @@ export default class PropertyGraph {
         return this.addNode(p);
       })
     };
+  }
+
+  connectPropertySetToProto(
+    p: PropertySet,
+    target: ModuleName,
+    edgeLabel: string
+  ) {
+    let props = this.getNodes<PrototypeProperty>('prototypeProperty', target);
+    let targetProp =
+      _.find(props, a => {
+        return a.name === p.name;
+      }) || this.addNode(new ImplicitPrototypeProperty(p.name, target));
+    this.graph.setEdge(
+      p.propertyGraphKey,
+      targetProp.propertyGraphKey,
+      edgeLabel
+    );
+    return [p, targetProp];
   }
 
   addTemplateBindings(t: Template) {
@@ -213,6 +245,9 @@ export default class PropertyGraph {
       ...edges.map(k => {
         let v = this.allNodes[k.v];
         let w = this.allNodes[k.w];
+        if (!v || !w) {
+          throw `Missing a graph node v:${v.dotGraphKey}, w:${w.dotGraphKey}`;
+        }
         return `"${v.dotGraphKey}" -> "${w.dotGraphKey}"`;
       }),
       '}'

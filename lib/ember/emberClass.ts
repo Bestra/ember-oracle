@@ -22,34 +22,45 @@ export class PropertyGet implements PropertyGraphNode {
   parentClass: EmberClass;
   position: Position;
   name: string;
-  nodeId: number;
   nodeType: 'propertyGet' = 'propertyGet';
   get nodeModuleName() {
     return this.parentClass.moduleName;
   }
   get propertyGraphKey() {
-    return `${this.nodeType}$${this.nodeId}`;
+    return [
+      this.nodeType,
+      this.nodeModuleName,
+      this.name,
+      this.position.line,
+      this.position.column
+    ].join('$');
   }
   get dotGraphKey() {
-    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position.column}`;
+    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position
+      .column}`;
   }
-
 }
 
 export class PropertySet implements PropertyGraphNode {
   parentClass: EmberClass;
   position: Position;
   name: string;
-  nodeId: number;
   nodeType: 'propertySet' = 'propertySet';
   get nodeModuleName() {
     return this.parentClass.moduleName;
   }
   get propertyGraphKey() {
-    return `${this.nodeType}$${this.nodeId}`;
+    return [
+      this.nodeType,
+      this.nodeModuleName,
+      this.name,
+      this.position.line,
+      this.position.column
+    ].join('$');
   }
   get dotGraphKey() {
-    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position.column}`;
+    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position
+      .column}`;
   }
 }
 
@@ -58,14 +69,14 @@ export class PrototypeProperty implements PropertyGraphNode {
   position: Position;
   name: string;
   consumedKeys: string[];
-  nodeId: number;
   isImplicit: boolean;
   nodeType: 'prototypeProperty' = 'prototypeProperty';
   get nodeModuleName() {
     return this.parentClass.moduleName;
   }
   get dotGraphKey() {
-    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position.column}`;
+    return `${this.nodeType}$${this.name}$${this.position.line}$${this.position
+      .column}`;
   }
 
   constructor(astNode, parentClass: EmberClass, isImplicit = false) {
@@ -77,13 +88,18 @@ export class PrototypeProperty implements PropertyGraphNode {
     this.consumedKeys = AST.findConsumedKeys(astNode);
   }
   get propertyGraphKey() {
-    return `${this.nodeType}$${this.nodeId}`;
+    return [
+      this.nodeType,
+      this.nodeModuleName,
+      this.name,
+      this.position.line,
+      this.position.column
+    ].join('$');
   }
 }
 
 export class ImplicitPrototypeProperty implements PropertyGraphNode {
   name: string;
-  nodeId: number;
   nodeType: 'prototypeProperty' = 'prototypeProperty';
   nodeModuleName: ModuleName;
   implicit = true;
@@ -93,7 +109,7 @@ export class ImplicitPrototypeProperty implements PropertyGraphNode {
     this.nodeModuleName = nodeModuleName;
   }
   get propertyGraphKey() {
-    return `${this.nodeType}$${this.nodeId}`;
+    return [this.nodeType, this.nodeModuleName, this.name].join('$');
   }
   get dotGraphKey() {
     return `implicitPrototypeProperty$${this.name}`;
@@ -112,7 +128,12 @@ export default class EmberClass implements ModuleDefinition {
   registry: Registry;
   src: string;
 
-  constructor(moduleName: ModuleName, filePath: FilePath, registry: Registry, src: string) {
+  constructor(
+    moduleName: ModuleName,
+    filePath: FilePath,
+    registry: Registry,
+    src: string
+  ) {
     this.moduleName = moduleName;
     this.filePath = filePath;
     this.registry = registry;
@@ -241,6 +262,7 @@ export default class EmberClass implements ModuleDefinition {
       return p;
     });
   }
+
   get propertySets(): PropertySet[] {
     return AST.findThisGets(this.ast, 'set').map(n => {
       let p = new PropertySet();
