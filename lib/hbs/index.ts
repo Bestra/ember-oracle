@@ -404,7 +404,7 @@ export class BlockParam extends TemplateMember<htmlBars.BlockStatement>
   }
 
   get definedAt() {
-    return null;
+    return this.block.blockParamDefinition(this.index);
   }
 
   get propertyGraphKey(): string {
