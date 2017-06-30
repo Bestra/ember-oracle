@@ -136,5 +136,5 @@ export function defaultExportProps(ast) {
       return false;
     }
   });
-  return directProps;
+  return directProps || [];
 }
