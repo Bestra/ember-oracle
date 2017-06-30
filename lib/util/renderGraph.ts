@@ -60,6 +60,37 @@ export class RenderGraph {
     process.stderr.write(invocations.length.toString());
   }
 
+  getRenderingContext(m: ModuleName) {
+    let possibleContexts = this.graph.inEdges(m) || [];
+    let contextEdge = possibleContexts.filter(e => {
+      return e.name == 'context';
+    })[0];
+    if (contextEdge) {
+      return contextEdge.v as ModuleName;
+    } else {
+      return undefined;
+    }
+  }
+
+  parentClasses(m: ModuleName) {
+    return (this.graph.inEdges(m) || [])
+      .filter(e => {
+        return e.name == 'subclass' || e.name == 'mixin';
+      })
+      .map(k => k.v);
+  }
+  allParentClasses(m: ModuleName, acc = []) {
+    let directParents = this.parentClasses(m);
+    if (directParents.length) {
+      let newParents = _.flatMap(directParents, p => {
+        return this.allParentClasses(<ModuleName>p, acc);
+      });
+      return acc.concat(<any>directParents, newParents);
+    } else {
+      return _.uniq(acc);
+    }
+  }
+
   connectInvocation(
     parentTemplateModuleName: ModuleName,
     invocation: TemplateInvocation
@@ -95,13 +126,18 @@ export class RenderGraph {
   connectSuperClass(module: EmberClass) {
     let s = module.superClass;
     if (s) {
-      this.graph.setEdge(s.moduleName, module.moduleName, 'subclass');
+      this.graph.setEdge(
+        s.moduleName,
+        module.moduleName,
+        'subclass',
+        'subclass'
+      );
     }
   }
 
   connectMixins(module: EmberClass) {
     module.mixins.forEach(m => {
-      this.graph.setEdge(m.moduleName, module.moduleName, 'mixin');
+      this.graph.setEdge(m.moduleName, module.moduleName, 'mixin', 'mixin');
     });
   }
 

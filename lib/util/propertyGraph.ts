@@ -49,9 +49,6 @@ export default class PropertyGraph {
       this.addEmberProps(m);
     });
 
-    _.forEach(this.nodeIndex.propertySet, (sets, moduleName) => {
-     
-    });
     this.registry.allEmberModules().forEach(m => {
       // wait to connect setters until all nodes have
       // been initialized
@@ -122,12 +119,51 @@ export default class PropertyGraph {
    */
   connectGetsToSets() {}
 
-  connectPropertySources(boundProperty) {
+  connectPropertySources(boundProperty: PropertyGraphNode) {
     //for a given bound property:
-    //go to the rendering context
-    //connect a prototypeAssignment to the boundProperty if there is one
-    //connect any setters of that property to the prototypeAssignment
+    //get the rendering context via the render graph
+
+    let context = this.renderGraph.getRenderingContext(
+      boundProperty.nodeModuleName
+    );
+    this.connectGettertoSource(boundProperty, context);
+    if (context) {
+      this.renderGraph.allParentClasses(context).forEach(a => {
+        this.connectGettertoSource(boundProperty, a);
+      })
+    }
+
     //go up the tree from the context and look for any other setters that match
+  }
+
+  /**
+   * Connects a property get or a bound path to a prototype property in the given module if 
+   * it exists
+   * @param getter 
+   * @param source 
+   */
+  connectGettertoSource(
+    getter: PropertyGraphNode,
+    source: ModuleName | undefined
+  ) {
+    let newEdge: PropertyGraphNode[] | undefined;
+    if (source) {
+      //connect a prototypeAssignment to the boundProperty if there is one
+      let prototypeProps = this.nodeIndex.prototypeProperty[source];
+      if (prototypeProps) {
+        let protoProp = _.find(prototypeProps, p => {
+          return p.name == getter.name;
+        });
+        if (protoProp) {
+          this.graph.setEdge(
+            protoProp.propertyGraphKey,
+            getter.propertyGraphKey
+          );
+          newEdge = [protoProp, getter];
+        }
+      }
+    }
+    return newEdge;
   }
 
   connectBindingsToContexts() {

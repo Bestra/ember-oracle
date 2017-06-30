@@ -152,6 +152,7 @@ describe('PropertyGraph', function() {
         ][0] as PropertySet;
         assert.equal(result.name, 'foo');
       });
+
       xit('works with "setProperties" calls');
     });
     describe('prototype assignments', function() {
@@ -238,5 +239,10 @@ describe('PropertyGraph', function() {
       assert.equal(b.nodeType, 'prototypeProperty');
     });
     xit('does nothing if the invocation targets a template', function() {});
+  });
+  describe('connectBindingsToContexts', function() {
+    it('connects a binding node to a prototype property in the context of the same name', function() {});
+    it('connects a binding node to an implicit prototype property in the context of the same name', function() {});
+    it('will connect to a property in a mixin if needed', function() {});
   });
 });
