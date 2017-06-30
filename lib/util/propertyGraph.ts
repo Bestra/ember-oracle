@@ -7,7 +7,7 @@ import {
   PropertyGraphNodeType
 } from './types';
 import { RenderGraph } from './renderGraph';
-import { Template, PropertyInvocation, Path } from '../hbs/index';
+import { Template, PropertyInvocation, Path, BlockParam, ComponentInvocation } from '../hbs/index';
 import EmberClass, {
   PrototypeProperty,
   ImplicitPrototypeProperty,
@@ -56,7 +56,7 @@ export default class PropertyGraph {
     });
 
     this.connectInvokedAttrs();
-    this.connectYields();
+    this.connectBlockParams();
     this.connectGetsToSets();
     this.connectBindingsToContexts();
   }
@@ -113,9 +113,21 @@ export default class PropertyGraph {
   /**
    * Not implemented
    */
-  connectYields() {}
+  connectBlockParams() {
+    return this.getNodesOfType<BlockParam>('blockParam').map(n => {
+      let block = n.block as ComponentInvocation;
+     if (block.templateModule) {
+        let t = this.registry.lookup(block.templateModule) as Template
+        if (t) {
+          t.getYield(n.index);
+        }
+      }
+    })
+  }
+
   /**
-   * Not implemented. 
+   * Connects getters to a prototype property or an implicit prototype property
+   * in the same module if it exists
    */
   connectGetsToSets() {
     return this.getNodesOfType<PropertyGraphNode>('propertyGet').map(n => {

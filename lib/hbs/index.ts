@@ -201,6 +201,10 @@ export class Block extends Mustache {
 }
 
 export class ComponentInvocation extends Block implements TemplateInvocation {
+  /**
+   * The module name of the component being invoked by this block
+   * {{foo-bar}} would be 'template:components/foo-bar'
+   */
   get templateModule() {
     return this.resolver.componentTemplate(this.pathString);
   }
@@ -627,12 +631,16 @@ export class Template implements ModuleDefinition {
     });
   }
 
-  getYieldPosition(index) {
+  getYield(index) {
     let yieldNode = this.cachedNodes['MustacheStatement'].filter(
       node => node.path.original === 'yield'
     )[0];
 
-    return yieldNode.params[index].loc.start;
+    return yieldNode.params[index]
+  }
+
+  getYieldPosition(index) {
+    return this.getYield(index).loc.start;
   }
 
   blockParamFromPath(path: Path): BlockParam | null {
