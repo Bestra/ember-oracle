@@ -99,6 +99,34 @@ export default class Application {
     return { position, invokedAttrs };
   }
 
+  propertySources(filePath, line, column) {
+    let fullPath = path.resolve(filePath);
+    let sourceModule = this.registry.lookup(
+      this.registry.lookupModuleName(fullPath)
+    );
+    let queryPosition = { line: parseInt(line), column: parseInt(column) };
+    let node = sourceModule.parsePropertyGraphNode(queryPosition);
+    if (node) {
+      return this.propertyGraph.findPropertySources(node);
+    } else {
+      return { error: 'no node found' };
+    }
+  }
+
+  propertySinks(filePath, line, column) {
+    let fullPath = path.resolve(filePath);
+    let sourceModule = this.registry.lookup(
+      this.registry.lookupModuleName(fullPath)
+    );
+    let queryPosition = { line: parseInt(line), column: parseInt(column) };
+    let node = sourceModule.parsePropertyGraphNode(queryPosition);
+    if (node) {
+      return this.propertyGraph.findPropertySinks(node);
+    } else {
+      return { error: 'no node found' };
+    }
+  }
+
   findContextModule(filePath: string) {
     let m = this.registry.lookupModuleName(filePath);
     let contextModule = this.resolver.templateContext(m);

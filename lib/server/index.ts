@@ -10,6 +10,7 @@ import * as _ from 'lodash';
 import { ok } from 'assert';
 
 import Application from './app';
+import { PropertyGraphNode } from '../util/types';
 
 export default class Server {
   app: Application;
@@ -127,6 +128,63 @@ export default class Server {
       ctx.type = 'image/svg+xml';
     });
 
+    router.get('/propertySources', function(ctx, next) {
+      console.log(ctx.query);
+      let fullPath = path.resolve(ctx.query.path);
+      let { line, column } = ctx.query;
+      let queryPosition = { line: parseInt(line), column: parseInt(column) };
+      let parents = app.propertySources(
+        fullPath,
+        parseInt(line),
+        parseInt(column)
+      );
+      if ((parents as any).error) {
+        ctx.body = parents;
+      } else {
+        ctx.body = (parents as PropertyGraphNode[]).map(t => {
+          let f = app.modulePath(t.nodeModuleName);
+          let p = t.position;
+          let previewLine;
+          if (p.line > 0) {
+            previewLine = app.registry.lookup(t.nodeModuleName).src.split('\n')[
+              p.line - 1
+            ];
+          } else {
+            previewLine = '';
+          }
+          return [f, p.line, p.column, previewLine].join(':');
+        });
+      }
+    });
+
+    router.get('/propertySinks', function(ctx, next) {
+      console.log(ctx.query);
+      let fullPath = path.resolve(ctx.query.path);
+      let { line, column } = ctx.query;
+      let queryPosition = { line: parseInt(line), column: parseInt(column) };
+      let parents = app.propertySinks(
+        fullPath,
+        parseInt(line),
+        parseInt(column)
+      );
+      if ((parents as any).error) {
+        ctx.body = parents;
+      } else {
+        ctx.body = (parents as PropertyGraphNode[]).map(t => {
+          let f = app.modulePath(t.nodeModuleName);
+          let p = t.position;
+          let previewLine;
+          if (p.line > 0) {
+            previewLine = app.registry.lookup(t.nodeModuleName).src.split('\n')[
+              p.line - 1
+            ];
+          } else {
+            previewLine = '';
+          }
+          return [f, p.line, p.column, previewLine].join(':');
+        });
+      }
+    });
     router.get('/propertyGraph.svg', function(ctx, next) {
       console.log(ctx.query);
       let svg = app.propertySvgGraph(ctx.query);
@@ -138,6 +196,22 @@ export default class Server {
     koaApp.use(router.routes()).use(router.allowedMethods());
 
     koaApp.listen(5300);
+    global['App'] = app;
+    let a = app.propertyGraph.lookupNode(
+      'boundProperty$template:components/sample-component$hey$3$2'
+    );
+    console.log(
+      'found: ',
+      app.propertyGraph.findPropertySources(a).map(p => p.propertyGraphKey)
+    );
+
+    let b = app.propertyGraph.lookupNode(
+      'propertySet$component:sample-component$hey$10$4'
+    );
+    console.log(
+      'found: ',
+      app.propertyGraph.findPropertySinks(b).map(p => p.propertyGraphKey)
+    );
     console.log('server listening on port 5300');
   }
 }

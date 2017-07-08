@@ -2,10 +2,68 @@ import * as recast from 'recast';
 import * as _ from 'lodash';
 import * as ESTree from 'estree';
 
-type Position = { line: number; column: number };
+export interface Position { line: number; column: number }
+export interface Location { start: Position; end: Position }
 type Prop = { [index: string]: Position };
 interface Dict<T> {
   [index: string]: T;
+}
+function startsWithin(
+  line: number,
+  column: number,
+  container: { line: number; column: number }
+) {
+  // console.log("check start - ",[line, column, container.line, container.column].join(':'))
+  if (line < container.line) {
+    return false;
+  } // completely excluded
+  if (line > container.line) {
+    return true;
+  } // completely included
+  if (line === container.line) {
+    if (column >= container.column) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
+function endsWithin(line, column, container: Position) {
+  // console.log("check end - ",[line, column, container.line, container.column].join(':'))
+  if (line > container.line) {
+    return false;
+  } // completely excluded
+  if (line < container.line) {
+    return true;
+  } // completely included
+  if (line === container.line) {
+    if (column <= container.column) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
+
+export function containsPosition(loc: Location, { line, column }) {
+  if (!loc) {
+    return false;
+  }
+  return (
+    startsWithin(line, column, loc.start) && endsWithin(line, column, loc.end)
+  );
+}
+
+export function containsNode(parent: any, child: any) {
+  return (
+    containsPosition(parent, child.loc.start) &&
+    containsPosition(parent, child.loc.end)
+  );
 }
 
 export interface ObjectProperty extends ESTree.Property {

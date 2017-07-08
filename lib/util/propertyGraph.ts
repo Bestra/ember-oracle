@@ -7,7 +7,13 @@ import {
   PropertyGraphNodeType
 } from './types';
 import { RenderGraph } from './renderGraph';
-import { Template, PropertyInvocation, Path, BlockParam, ComponentInvocation } from '../hbs/index';
+import {
+  Template,
+  PropertyInvocation,
+  Path,
+  BlockParam,
+  ComponentInvocation
+} from '../hbs/index';
 import EmberClass, {
   PrototypeProperty,
   ImplicitPrototypeProperty,
@@ -15,6 +21,7 @@ import EmberClass, {
 } from '../ember/emberClass';
 import * as _ from 'lodash';
 
+interface Edge { v: PropertyGraphNode; w: PropertyGraphNode }
 export default class PropertyGraph {
   registry: Registry;
   renderGraph: RenderGraph;
@@ -37,6 +44,10 @@ export default class PropertyGraph {
       prototypeProperty: {},
       blockParam: {}
     };
+  }
+
+  lookupNode(s: string) {
+    return this.allNodes[s];
   }
 
   init() {
@@ -81,31 +92,32 @@ export default class PropertyGraph {
    * Connect invocations to prototype properties, or create an implicit
    * prototype property
    */
-  connectInvokedAttrs() {
-    return this.getNodesOfType<PropertyInvocation>(
-      'propertyInvocation'
-    ).map(p => {
-      let target = p.invocation.moduleName;
-      //if the target is a template, do nothing for now.
-      if (target.match('template:')) {
-        return [];
-      }
+  connectInvokedAttrs(): Edge[] {
+    return this.getNodesOfType<PropertyInvocation>('propertyInvocation')
+      .filter(p => {
+        let target = p.invocation.moduleName;
+        return !target.match('template:');
+      })
+      .map(p => {
+        let target = p.invocation.moduleName;
+        //if the target is an ember module, find or create the PrototypeProperty
+        //on it.
+        let props = this.getNodes<PrototypeProperty>(
+          'prototypeProperty',
+          target
+        );
+        let targetProp =
+          _.find(props, a => {
+            return a.name === p.name;
+          }) || this.addNode(new ImplicitPrototypeProperty(p.name, target));
+        this.graph.setEdge(
+          p.propertyGraphKey,
+          targetProp.propertyGraphKey,
+          'invocation'
+        );
 
-      //if the target is an ember module, find or create the PrototypeProperty
-      //on it.
-      let props = this.getNodes<PrototypeProperty>('prototypeProperty', target);
-      let targetProp =
-        _.find(props, a => {
-          return a.name === p.name;
-        }) || this.addNode(new ImplicitPrototypeProperty(p.name, target));
-      this.graph.setEdge(
-        p.propertyGraphKey,
-        targetProp.propertyGraphKey,
-        'invocation'
-      );
-
-      return [p, targetProp];
-    });
+        return { v: p, w: targetProp };
+      });
     // connect the propertyInvocation to the corresponding name on the context,
     // or create a new implicitProperty node associated to the rendering context
   }
@@ -116,13 +128,13 @@ export default class PropertyGraph {
   connectBlockParams() {
     return this.getNodesOfType<BlockParam>('blockParam').map(n => {
       let block = n.block as ComponentInvocation;
-     if (block.templateModule) {
-        let t = this.registry.lookup(block.templateModule) as Template
+      if (block.templateModule) {
+        let t = this.registry.lookup(block.templateModule) as Template;
         if (t) {
           t.getYield(n.index);
         }
       }
-    })
+    });
   }
 
   /**
@@ -146,11 +158,16 @@ export default class PropertyGraph {
     let context = this.renderGraph.getRenderingContext(
       boundProperty.nodeModuleName
     );
-    this.connectGettertoSource(boundProperty, context);
     if (context) {
-      this.renderGraph.allParentClasses(context).forEach(a => {
-        this.connectGettertoSource(boundProperty, a);
-      });
+      let contextEdge = this.connectGettertoSource(boundProperty, context);
+      let otherEdges = _(this.renderGraph.allParentClasses(context))
+        .map(a => {
+          return this.connectGettertoSource(boundProperty, a)!;
+        })
+        .compact()
+        .value();
+
+      return [contextEdge!].concat(otherEdges);
     }
 
     //go up the tree from the context and look for any other setters that match
@@ -166,7 +183,7 @@ export default class PropertyGraph {
     getter: PropertyGraphNode,
     source: ModuleName | undefined
   ) {
-    let newEdge: PropertyGraphNode[] | undefined;
+    let newEdge: Edge | undefined;
     if (source) {
       //connect a prototypeAssignment to the boundProperty if there is one
       let prototypeProps = this.nodeIndex.prototypeProperty[source];
@@ -179,7 +196,7 @@ export default class PropertyGraph {
             protoProp.propertyGraphKey,
             getter.propertyGraphKey
           );
-          newEdge = [protoProp, getter];
+          newEdge = { v: protoProp, w: getter };
         }
       }
     }
@@ -191,8 +208,8 @@ export default class PropertyGraph {
    * including implicit prototype properties created by invocations and setters
    */
   connectBindingsToContexts() {
-    this.getNodesOfType<Path>('boundProperty').forEach(boundProp => {
-      this.connectPropertySources(boundProp);
+    return this.getNodesOfType<Path>('boundProperty').map(boundProp => {
+      return this.connectPropertySources(boundProp);
     });
   }
 
@@ -229,7 +246,58 @@ export default class PropertyGraph {
     return n;
   }
 
-  findNode(nodeType: PropertyGraphNodeType, fn) {}
+  /**
+ * 
+ * Finds propertySets and prototypeProperty nodes for a given node.
+ * Ignores implicitPrototypeProperty nodes.  This method does not create any 
+ * new edges, it merely navigates existing ones
+ */
+  findPropertySources(n: PropertyGraphNode) {
+    let preds = this.graph.predecessors(n.propertyGraphKey)!.map(p =>
+      this.lookupNode(p)
+    );
+    //find predecessors. if a pred is an implicit prototype property find -its- predecessors
+    return preds.reduce((acc, val) => {
+      if (
+        val.nodeType == 'prototypeProperty' &&
+        (val as PrototypeProperty).isImplicit
+      ) {
+        // skip implicit prototype properties, grabbing their predecessors
+        let implicitPreds = this.graph.predecessors(
+          val.propertyGraphKey
+        )!.map(p => this.lookupNode(p));
+        return acc.concat(implicitPreds);
+      } else {
+        return acc.concat([val]);
+      }
+    }, [] as PropertyGraphNode[]);
+  }
+
+/**
+ * For a PropertySet or a PrototypeProperty, finds PropertyGets and
+ * BoundPropertys 
+ * @param n 
+ */
+  findPropertySinks(n: PropertyGraphNode) {
+    let children = this.graph.successors(n.propertyGraphKey)!.map(p =>
+      this.lookupNode(p)
+    );
+    //find children. if a pred is an implicit prototype property find -its- children
+    return children.reduce((acc, val) => {
+      if (
+        val.nodeType == 'prototypeProperty' &&
+        (val as PrototypeProperty).isImplicit
+      ) {
+        // skip implicit prototype properties, grabbing their children
+        let implicitNodes = this.graph.successors(
+          val.propertyGraphKey
+        )!.map(p => this.lookupNode(p));
+        return acc.concat(implicitNodes);
+      } else {
+        return acc.concat([val]);
+      }
+    }, [] as PropertyGraphNode[]);
+  }
 
   addEmberProps(e: EmberClass) {
     return {
@@ -249,7 +317,7 @@ export default class PropertyGraph {
     p: PropertySet,
     target: ModuleName,
     edgeLabel: string
-  ) {
+  ): Edge {
     let props = this.getNodes<PrototypeProperty>('prototypeProperty', target);
     let targetProp =
       _.find(props, a => {
@@ -260,10 +328,10 @@ export default class PropertyGraph {
       targetProp.propertyGraphKey,
       edgeLabel
     );
-    return [p, targetProp];
+    return { v: p, w: targetProp };
   }
 
-  addTemplateBindings(t: Template) {
+  addTemplateBindings(t: Template): (Edge | PropertyGraphNode)[] {
     //1. add nodes for all the props in the template
     //2. add nodes for block params
     //3. connect block params to their props
@@ -274,9 +342,9 @@ export default class PropertyGraph {
       if (b) {
         let bNode = this.addNode(b);
         this.graph.setEdge(b.propertyGraphKey, p.propertyGraphKey);
-        return [bNode, pNode];
+        return { v: bNode, w: pNode };
       } else {
-        return [pNode];
+        return pNode;
       }
     });
   }

@@ -179,7 +179,7 @@ describe('PropertyGraph', function() {
     });
   });
   describe('connectInvokedAttrs', function() {
-    it.only(
+    it(
       'connects a property invocation to a prototype property',
       function() {
         let registry = new Registry(new Resolver());
@@ -204,13 +204,13 @@ describe('PropertyGraph', function() {
         );
         //precondition check
         assert.equal(subject.graph.edgeCount(), 0, 'no edges connected yet');
-        let [[a, b]] = subject.connectInvokedAttrs();
+        let [{v, w}] = subject.connectInvokedAttrs();
         assert.equal(subject.graph.edgeCount(), 1, 'graph has one edge');
         assert.ok(
-          subject.graph.hasEdge(a.propertyGraphKey, b.propertyGraphKey)
+          subject.graph.hasEdge(v.propertyGraphKey, w.propertyGraphKey)
         );
-        assert.equal(a.dotGraphKey, barInv.dotGraphKey);
-        assert.equal(b.dotGraphKey, barProp.dotGraphKey);
+        assert.equal(v.dotGraphKey, barInv.dotGraphKey);
+        assert.equal(w.dotGraphKey, barProp.dotGraphKey);
       }
     );
     it('creates an implicit prototype property if one does not exist', function() {
@@ -232,11 +232,11 @@ describe('PropertyGraph', function() {
       let [[barInv]] = subject.addPropertyInvocations(parentTemplate);
       //precondition check
       assert.equal(subject.graph.edgeCount(), 0, 'no edges connected yet');
-      let [[a, b]] = subject.connectInvokedAttrs();
+      let [{v, w}] = subject.connectInvokedAttrs();
       assert.equal(subject.graph.edgeCount(), 1, 'graph has one edge');
-      assert.ok(subject.graph.hasEdge(a.propertyGraphKey, b.propertyGraphKey));
-      assert.equal(a.dotGraphKey, barInv.dotGraphKey);
-      assert.equal(b.nodeType, 'prototypeProperty');
+      assert.ok(subject.graph.hasEdge(v.propertyGraphKey, w.propertyGraphKey));
+      assert.equal(v.dotGraphKey, barInv.dotGraphKey);
+      assert.equal(w.nodeType, 'prototypeProperty');
     });
     xit('does nothing if the invocation targets a template', function() {});
   });

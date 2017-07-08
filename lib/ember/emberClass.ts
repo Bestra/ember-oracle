@@ -12,15 +12,15 @@ import {
   FilePath,
   PropertyGraphNode
 } from '../util/types';
-type Position = { line: number; column: number };
-type Prop = { [index: string]: Position };
+type Prop = { [index: string]: AST.Position };
 interface Dict<T> {
   [index: string]: T;
 }
 
 export class PropertyGet implements PropertyGraphNode {
   parentClass: EmberClass;
-  position: Position;
+  position: AST.Position;
+  location: AST.Location;
   name: string;
   nodeType: 'propertyGet' = 'propertyGet';
   get nodeModuleName() {
@@ -43,8 +43,9 @@ export class PropertyGet implements PropertyGraphNode {
 
 export class PropertySet implements PropertyGraphNode {
   parentClass: EmberClass;
-  position: Position;
+  position: AST.Position;
   name: string;
+  location: AST.Location;
   nodeType: 'propertySet' = 'propertySet';
   get nodeModuleName() {
     return this.parentClass.moduleName;
@@ -66,7 +67,8 @@ export class PropertySet implements PropertyGraphNode {
 
 export class PrototypeProperty implements PropertyGraphNode {
   parentClass: EmberClass;
-  position: Position;
+  position: AST.Position;
+  location: AST.Location;
   name: string;
   consumedKeys: string[];
   isImplicit: boolean;
@@ -83,6 +85,7 @@ export class PrototypeProperty implements PropertyGraphNode {
     let { loc: { start: { line, column } }, key: { name } } = astNode;
     this.name = name;
     this.position = { line, column };
+    this.location = astNode.loc;
     this.parentClass = parentClass;
     this.isImplicit = isImplicit;
     this.consumedKeys = AST.findConsumedKeys(astNode);
@@ -102,7 +105,7 @@ export class ImplicitPrototypeProperty implements PropertyGraphNode {
   name: string;
   nodeType: 'prototypeProperty' = 'prototypeProperty';
   nodeModuleName: ModuleName;
-  implicit = true;
+  isImplicit = true;
 
   constructor(name, nodeModuleName) {
     this.name = name;
@@ -113,6 +116,10 @@ export class ImplicitPrototypeProperty implements PropertyGraphNode {
   }
   get dotGraphKey() {
     return `implicitPrototypeProperty$${this.name}`;
+  }
+
+  get position() {
+    return {line: 0, column: 0}
   }
 }
 
@@ -255,6 +262,7 @@ export default class EmberClass implements ModuleDefinition {
     return AST.findThisGets(this.ast, 'get').map(n => {
       let p = new PropertyGet();
       let firstArg = n.arguments[0] as any;
+      p.location = n.loc!;
       p.name = firstArg.value;
       p.parentClass = this;
       let { line, column } = n.loc!.start;
@@ -268,6 +276,7 @@ export default class EmberClass implements ModuleDefinition {
       let p = new PropertySet();
       let firstArg = n.arguments[0] as any;
       p.name = firstArg.value;
+      p.location = n.loc!;
       p.parentClass = this;
       let { line, column } = n.loc!.start;
       p.position = { line, column };
@@ -290,6 +299,22 @@ export default class EmberClass implements ModuleDefinition {
       superActions,
       ...mixinActions,
       localActions
+    );
+  }
+
+  parsePropertyGraphNode(position: AST.Position): PropertyGraphNode | null {
+    //for now look through the gets and sets, then look at the props
+    return (
+      _.find(this.propertyGets, p =>
+        AST.containsPosition(p.location, position)
+      ) ||
+      _.find(this.propertySets, p =>
+        AST.containsPosition(p.location, position)
+      ) ||
+      _.find(this.props, p =>
+        AST.containsPosition(p.location, position)
+      ) ||
+      null
     );
   }
 }

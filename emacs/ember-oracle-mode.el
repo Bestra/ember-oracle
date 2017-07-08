@@ -152,8 +152,44 @@ This replacement uses a completion system according to
     (eo--goto-position path line column)
     ))
 
+(defun eo-show-property-sources ()
+  "shows a list of sources for a given bound property or this.get()"
+  (interactive)
+  (let* ((response (eo-http-get "propertySources"
+                                `(("path" . ,(buffer-file-name))
+                                  ("line" . ,(number-to-string (line-number-at-pos)))
+                                  ("column" . ,(number-to-string (current-column))))))
+         (parsed (eo--parse-response response))
+         (candidates (seq-into parsed 'list))
+         (choice (eo--completing-read "Select a location to view "
+                                      candidates))
+         (parts (split-string choice ":")))
+    (cl-destructuring-bind (file line column . preview) parts
+      (eo--goto-position file
+                         (string-to-number line)
+                         (string-to-number column)))
+    ))
+
+(defun eo-show-property-sinks ()
+  "shows a list of sinks for a given bound property or this.get()"
+  (interactive)
+  (let* ((response (eo-http-get "propertySinks"
+                                `(("path" . ,(buffer-file-name))
+                                  ("line" . ,(number-to-string (line-number-at-pos)))
+                                  ("column" . ,(number-to-string (current-column))))))
+         (parsed (eo--parse-response response))
+         (candidates (seq-into parsed 'list))
+         (choice (eo--completing-read "Select a location to view "
+                                      candidates))
+         (parts (split-string choice ":")))
+    (cl-destructuring-bind (file line column . preview) parts
+      (eo--goto-position file
+                         (string-to-number line)
+                         (string-to-number column)))
+    ))
+
 (defun eo-show-parent-templates ()
-  "dislplays a list of parent templates"
+  "displays a list of parent templates"
   (interactive)
   (let* ((candidates (seq-into (eo-find-parent-templates) 'list))
          (choice (eo--completing-read "Select a template to view "
@@ -168,6 +204,8 @@ This replacement uses a completion system according to
 (define-key ember-oracle-commands-map (kbd "f a") #'eo-goto-alternate-file)
 (define-key ember-oracle-commands-map (kbd "f p") #'eo-show-parent-templates)
 (define-key ember-oracle-commands-map (kbd "f d") #'eo-goto-definition)
+(define-key ember-oracle-commands-map (kbd "f s") #'eo-show-property-sources)
+(define-key ember-oracle-commands-map (kbd "f S") #'eo-show-property-sinks)
 
 
 (defvar ember-oracle-mode-keymap (make-sparse-keymap))

@@ -315,6 +315,15 @@ export class PropertyInvocation implements PropertyGraphNode {
   get name() {
     return this.key;
   }
+
+  get position() {
+    let p = this.invocation.invokedAt.position;
+    return {
+      line: p.line,
+      column: p.column
+    };
+  }
+
   constructor(i: TemplateInvocation, key: string, value: any) {
     this.invocation = i;
     this.key = key;
@@ -347,6 +356,13 @@ export class Path extends TemplateMember<htmlBars.PathExpression>
   nodeType: 'boundProperty' = 'boundProperty';
   get name() {
     return this.root;
+  }
+  get position() {
+    let p = this.astNode.loc.start;
+    return {
+      line: p.line,
+      column: p.column
+    };
   }
   get propertyGraphKey(): string {
     return [
@@ -411,13 +427,21 @@ export class BlockParam extends TemplateMember<htmlBars.BlockStatement>
     return this.block.blockParamDefinition(this.index);
   }
 
+  get position() {
+    let p = this.astNode.loc.start;
+    return {
+      line: p.line,
+      column: p.column
+    };
+  }
+
   get propertyGraphKey(): string {
     return [
       this.nodeType,
       this.nodeModuleName,
       this.name,
-      this.astNode.loc.start.line,
-      this.astNode.loc.start.column
+      this.position.line,
+      this.position.column
     ].join('$');
   }
   get dotGraphKey(): string {
@@ -431,6 +455,12 @@ function findContainingComponent(template: Template, pathExpr) {
   return _.find(template.components, hasPath);
 }
 
+/**
+ * Finds the first node of a given type that contains the given position
+ * @param ast 
+ * @param position 
+ * @param type 
+ */
 let nodeContainingPosition = (ast, position, type) => {
   return _.first(findNodes<any>(ast, type, n => containsPosition(n, position)));
 };
@@ -459,6 +489,8 @@ export class Template implements ModuleDefinition {
       ) || new NoContext(this.moduleName)
     );
   }
+
+  propertyGraphKey;
 
   constructor(
     moduleName: ModuleName,
@@ -636,7 +668,7 @@ export class Template implements ModuleDefinition {
       node => node.path.original === 'yield'
     )[0];
 
-    return yieldNode.params[index]
+    return yieldNode.params[index];
   }
 
   getYieldPosition(index) {
@@ -662,6 +694,28 @@ export class Template implements ModuleDefinition {
     }
   }
 
+  /**
+ * Returns a PropertyGraph node for a given position.
+ * Right now this only works for bound properties and block params
+ * TODO: get working for invoked attributes
+ * @param position 
+ */
+  parsePropertyGraphNode(position: Position): PropertyGraphNode | null {
+    console.log('looking up position ', position);
+    let findContainer = _.partial(
+      nodeContainingPosition,
+      this.astNode,
+      position
+    );
+
+    let pathExpr = findContainer('PathExpression');
+    if (pathExpr) {
+      let foundPath = new Path(this, pathExpr);
+      return this.blockParamFromPath(foundPath) || foundPath;
+    } else {
+      return null;
+    }
+  }
   parsePosition(position: Position): Defineable {
     console.log('looking up position ', position);
     let findContainer = _.partial(
