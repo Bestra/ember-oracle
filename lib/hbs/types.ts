@@ -1,7 +1,6 @@
-import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax'
+import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax';
 
 export interface Template {
-    filePath;
-    source;
+  filePath;
+  source;
 }
-
