@@ -1,4 +1,4 @@
-import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax';
+import * as glimmer from '@glimmer/syntax'
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ember from '../ember';
@@ -14,8 +14,9 @@ import {
 
 import * as _ from 'lodash';
 import { containsPosition, containsNode, findNodes } from './util';
+import { PathExpression } from "@glimmer/syntax/dist/types/lib/types/handlebars-ast";
 
-type Position = htmlBars.Position;
+type Position = glimmer.AST.Position;
 type FilePosition = { filePath: FilePath; position: Position };
 interface Dict<T> {
   [index: string]: T;
@@ -39,7 +40,7 @@ export interface TemplateInvocation {
     filePath: string;
     position: Position;
   };
-  astNode: htmlBars.ASTNode;
+  astNode: any;
   invokedAttr: (attrName: string) => string;
   /**
      * The module name of the invoked template, either for a component or partial. 
@@ -57,7 +58,7 @@ export interface TemplateInvocation {
    */
   parentModule: ModuleName;
   isPartial: boolean;
-  props: Dict<htmlBars.Param>;
+  props: Dict<glimmer.AST.Expression>;
 }
 
 class NullPosition implements Defineable {
@@ -106,7 +107,7 @@ class TemplateMember<T> implements Defineable {
 /**
  * A mustache is anything inside {{}}
  */
-export class Mustache extends TemplateMember<htmlBars.MustacheStatement> {
+export class Mustache extends TemplateMember<glimmer.AST.MustacheStatement> {
   /**
      * the path the mustache is called with;
      * for {{foo-bar}} the pathString is "foo-bar"
@@ -146,7 +147,7 @@ export class Partial extends Mustache implements TemplateInvocation {
   }
 
   get templatePath() {
-    let partialPath = this.params[0] as htmlBars.StringLiteral;
+    let partialPath = this.params[0] as glimmer.AST.StringLiteral;
     return partialPath.original;
   }
 
@@ -185,8 +186,22 @@ export class Partial extends Mustache implements TemplateInvocation {
  * 
  * {{/my-block}}
  */
-export class Block extends Mustache {
-  astNode: htmlBars.BlockStatement;
+export class Block extends TemplateMember<glimmer.AST.BlockStatement> {
+  get pathString() {
+    return this.astNode.path.original;
+  }
+
+  get attrs() {
+    let pairs = this.astNode.hash.pairs;
+    return _.map(pairs, 'key');
+  }
+
+  get params() {
+    return this.astNode.params;
+  }
+  get definedAt(): FilePosition | null {
+    return null;
+  }
 
   get blockParams() {
     return this.astNode.program.blockParams;
@@ -200,13 +215,38 @@ export class Block extends Mustache {
   }
 }
 
-export class ComponentInvocation extends Block implements TemplateInvocation {
+export class ComponentInvocation extends TemplateMember<any> implements TemplateInvocation {
+  astNode: glimmer.AST.MustacheStatement | glimmer.AST.BlockStatement;
+    /**
+     * the path the mustache is called with;
+     * for {{foo-bar}} the pathString is "foo-bar"
+     */
+  get pathString() {
+    return this.astNode.path.original;
+  }
+
+  get attrs() {
+    let pairs = this.astNode.hash.pairs;
+    return _.map(pairs, 'key');
+  }
+
+  get params() {
+    return this.astNode.params;
+  }
+
+  get blockParams() {
+    if (this.astNode.type === 'BlockStatement') {
+      return this.astNode.program.blockParams;
+    } else {
+      return [];
+    }
+  }
   /**
    * The module name of the component being invoked by this block
    * {{foo-bar}} would be 'template:components/foo-bar'
    */
   get templateModule() {
-    return this.resolver.componentTemplate(this.pathString);
+    return this.resolver.componentTemplate(this.pathString as string);
   }
 
   get templateFilePath() {
@@ -218,7 +258,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
     let pairs = _.map(this.astNode.hash.pairs, p => {
       return [p.key, p.value];
     });
-    return (_.fromPairs(pairs) as any) as Dict<htmlBars.Param>;
+    return (_.fromPairs(pairs) as any) as Dict<glimmer.AST.Expression>;
   }
 
   get isPartial() {
@@ -245,7 +285,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
   }
 
   invokedAttr(attrName: string): string {
-    let printedAttr = htmlBars.print(this.props[attrName]);
+    let printedAttr = glimmer.print(this.props[attrName]);
     if (printedAttr) {
       return `${attrName}=${printedAttr}`;
     } else {
@@ -276,7 +316,7 @@ export class ComponentInvocation extends Block implements TemplateInvocation {
  * For now this only accounts for actions defined by
  * string literals, not bound paths
  */
-export class Action extends TemplateMember<htmlBars.Callable> {
+export class Action extends TemplateMember<glimmer.AST.Call> {
   get definedAt() {
     let contextModule = this.resolver.templateContext(
       this.containingTemplate.moduleName
@@ -295,7 +335,7 @@ export class Action extends TemplateMember<htmlBars.Callable> {
   }
 
   get name() {
-    let name = this.astNode.params[0] as htmlBars.StringLiteral;
+    let name = this.astNode.params[0] as glimmer.AST.StringLiteral;
     return name.original;
   }
 }
@@ -347,12 +387,12 @@ export class PropertyInvocation implements PropertyGraphNode {
     ].join('$');
   }
 }
-export class Path extends TemplateMember<htmlBars.PathExpression>
+export class Path extends TemplateMember<glimmer.AST.PathExpression>
   implements PropertyGraphNode {
   get root() {
     return this.astNode.parts[0];
   }
-  astNode: htmlBars.PathExpression;
+  astNode: glimmer.AST.PathExpression;
   nodeType: 'boundProperty' = 'boundProperty';
   get name() {
     return this.root;
@@ -407,7 +447,7 @@ export class Path extends TemplateMember<htmlBars.PathExpression>
  * BlockParams are those yielded by a block helper.
  * {{#each foos as |foo|}} <-- foo is a block param
  */
-export class BlockParam extends TemplateMember<htmlBars.BlockStatement>
+export class BlockParam extends TemplateMember<glimmer.AST.BlockStatement>
   implements PropertyGraphNode {
   index: number;
   name: string;
@@ -504,23 +544,23 @@ export class Template implements ModuleDefinition {
     this.src = src;
   }
 
-  _astNode: htmlBars.Program;
+  _astNode: glimmer.AST.Program;
   get astNode() {
     if (this._astNode) {
       return this._astNode;
     }
-    this._astNode = htmlBars.parse(this.src);
+    this._astNode = glimmer.preprocess(this.src);
     return this._astNode;
   }
 
   _cache: {
-    SubExpression: htmlBars.SubExpression[];
-    MustacheStatement: htmlBars.MustacheStatement[];
-    ElementModifierStatement: htmlBars.ElementModifierStatement[];
-    BlockStatement: htmlBars.BlockStatement[];
-    StringLiteral: htmlBars.StringLiteral[];
-    PathExpression: htmlBars.PathExpression[];
-    All: htmlBars.ASTNode[];
+    SubExpression: glimmer.AST.SubExpression[];
+    MustacheStatement: glimmer.AST.MustacheStatement[];
+    ElementModifierStatement: glimmer.AST.ElementModifierStatement[];
+    BlockStatement: glimmer.AST.BlockStatement[];
+    StringLiteral: glimmer.AST.StringLiteral[];
+    PathExpression: glimmer.AST.PathExpression[];
+    All: any[];
   };
 
   /**
@@ -550,7 +590,7 @@ export class Template implements ModuleDefinition {
       All: []
     };
 
-    let nodes = findNodes<htmlBars.ASTNode>(
+    let nodes = findNodes<any>(
       this.astNode,
       'All',
       k => !!this._cache[k.type]
@@ -596,7 +636,7 @@ export class Template implements ModuleDefinition {
     };
     let helpers = this.cachedNodes['All'].filter(
       isHelper
-    ) as htmlBars.Callable[];
+    ) as glimmer.AST.Call[];
 
     let allPaths = this.cachedNodes['PathExpression'];
 
@@ -643,11 +683,18 @@ export class Template implements ModuleDefinition {
   }
   get components() {
     let blockComponents = _.filter(this.blocks, block => {
-      return block instanceof ComponentInvocation;
-    }) as ComponentInvocation[];
+      let path = (block.astNode.path as any);
+      !!this.registry.findComponent(path.original)
+    }).map(block => new ComponentInvocation(this, block.astNode))
 
     let mustacheComponents = this.cachedNodes['MustacheStatement']
-      .filter(n => !!this.registry.findComponent(n.path.original))
+      .filter(n => {
+        if (n.path.type === 'PathExpression') {
+          return !!this.registry.findComponent(n.path.original);
+        } else {
+          return false
+        }
+      })
       .map(n => new ComponentInvocation(this, n));
 
     return blockComponents.concat(mustacheComponents);
@@ -655,11 +702,7 @@ export class Template implements ModuleDefinition {
 
   get blocks() {
     return this.cachedNodes['BlockStatement'].map(node => {
-      if (!!this.registry.findComponent(node.path.original)) {
-        return new ComponentInvocation(this, node);
-      } else {
         return new Block(this, node);
-      }
     });
   }
 

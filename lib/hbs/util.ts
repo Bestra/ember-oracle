@@ -42,16 +42,20 @@ function endsWithin(line, column, container: htmlBars.Position) {
   }
 }
 
+/**
+ * pp formats location info for printing
+ */
+let pp = l => {
+  return `${l.start.line}:${l.start.column} - ${l.end.line}:${l.end.column}`;
+};
+
 export function containsPosition(
-  { loc }: htmlBars.ASTNode,
+  { loc },
   { line, column }: htmlBars.Position
 ) {
   if (!loc) {
     return false;
   }
-  const pp = l => {
-    return `${l.start.line}:${l.start.column} - ${l.end.line}:${l.end.column}`;
-  };
   return (
     startsWithin(line, column, loc.start) && endsWithin(line, column, loc.end)
   );
