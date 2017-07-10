@@ -196,22 +196,6 @@ export default class Server {
     koaApp.use(router.routes()).use(router.allowedMethods());
 
     koaApp.listen(5300);
-    global['App'] = app;
-    let a = app.propertyGraph.lookupNode(
-      'boundProperty$template:components/sample-component$hey$3$2'
-    );
-    console.log(
-      'found: ',
-      app.propertyGraph.findPropertySources(a).map(p => p.propertyGraphKey)
-    );
-
-    let b = app.propertyGraph.lookupNode(
-      'propertySet$component:sample-component$hey$10$4'
-    );
-    console.log(
-      'found: ',
-      app.propertyGraph.findPropertySinks(b).map(p => p.propertyGraphKey)
-    );
     console.log('server listening on port 5300');
   }
 }
