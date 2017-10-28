@@ -130,9 +130,10 @@ export default class PropertyGraph {
       let block = n.block as ComponentInvocation;
       if (block.templateModule) {
         let t = this.registry.lookup(block.templateModule) as Template;
-        if (t) {
-          t.getYield(n.index);
-        }
+        // TODO: this will need to work with partials
+        // if (t) {
+        //   t.getYield(n.index);
+        // }
       }
     });
   }
