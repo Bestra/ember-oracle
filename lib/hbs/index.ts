@@ -357,14 +357,14 @@ export class PropertyInvocation implements PropertyGraphNode {
   }
 
   get position() {
-    let p = this.invocation.invokedAt.position;
+    let p = this.value.loc.start;
     return {
       line: p.line,
       column: p.column
     };
   }
 
-  constructor(i: TemplateInvocation, key: string, value: any) {
+  constructor(i: TemplateInvocation, key: string, value: glimmer.AST.Expression) {
     this.invocation = i;
     this.key = key;
     this.value = value;
