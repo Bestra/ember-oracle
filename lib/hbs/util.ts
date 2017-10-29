@@ -1,9 +1,8 @@
-import * as htmlBars from 'htmlbars/dist/cjs/htmlbars-syntax';
-
+import * as glimmer from '@glimmer/syntax'
 function startsWithin(
   line: number,
   column: number,
-  container: htmlBars.Position
+  container: glimmer.AST.Position
 ) {
   // console.log("check start - ",[line, column, container.line, container.column].join(':'))
   if (line < container.line) {
@@ -23,7 +22,7 @@ function startsWithin(
   }
 }
 
-function endsWithin(line, column, container: htmlBars.Position) {
+function endsWithin(line, column, container: glimmer.AST.Position) {
   // console.log("check end - ",[line, column, container.line, container.column].join(':'))
   if (line > container.line) {
     return false;
@@ -51,7 +50,7 @@ let pp = l => {
 
 export function containsPosition(
   { loc },
-  { line, column }: htmlBars.Position
+  { line, column }: glimmer.AST.Position
 ) {
   if (!loc) {
     return false;
@@ -62,8 +61,8 @@ export function containsPosition(
 }
 
 export function containsNode(
-  parent: htmlBars.ASTNode,
-  child: htmlBars.ASTNode
+  parent: glimmer.AST.BaseNode,
+  child: glimmer.AST.BaseNode
 ) {
   return (
     containsPosition(parent, child.loc.start) &&
@@ -80,6 +79,6 @@ export function findNodes<T>(ast, type, filterFn: (node: T) => boolean) {
       found.push(node);
     }
   };
-  htmlBars.traverse(ast, finder);
+  glimmer.traverse(ast, finder);
   return found;
 }
