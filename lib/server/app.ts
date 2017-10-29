@@ -92,7 +92,7 @@ export default class Application {
     let defineable = template.parsePosition(queryPosition);
     let position = defineable.definedAt;
     let invokedAttrs = this.renderGraph
-      .invocations(this.resolver.templateContext(template.moduleName), attr)
+      .invokedAttr(this.resolver.templateContext(template.moduleName), attr)
       .filter(a => {
         return !a.match(/not provided/);
       });
@@ -132,10 +132,11 @@ export default class Application {
     let contextModule = this.resolver.templateContext(m);
     return this.registry.lookup(contextModule) ? contextModule : m;
   }
+
   invokedAttrs(templateFilePath: string, attrName: string) {
     let m = this.findContextModule(templateFilePath);
-    console.log('looking up parents for ', m);
-    return this.renderGraph.invocations(m, attrName);
+    console.log('looking up invoked attrs for ', m);
+    return this.renderGraph.invokedAttr(m, attrName);
   }
 
   findParents(templateFilePath: string) {

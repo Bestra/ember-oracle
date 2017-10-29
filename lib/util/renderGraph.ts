@@ -140,9 +140,9 @@ export class RenderGraph {
     });
   }
 
-  // TODO: This method needs to go away and use the property graph instead
-  invocations(componentModule: string, attrName: string) {
-    return ['foo'];
+  invokedAttr(componentModule: string, attrName: string) {
+    let invs = this.invocationSites(componentModule);
+    return invs.map(i => i.invokedAttr(attrName));
   }
 
   /**
